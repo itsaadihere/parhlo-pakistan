@@ -21,12 +21,117 @@ export default function ParhloPakistan() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [transactionId, setTransactionId] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const courses = [
     { title: 'WordPress Mastery', price: '2,500', students: '1.2k', rating: '4.9', tag: 'Bestseller' },
     { title: 'Excel for Accountants', price: '1,500', students: '850', rating: '4.8', tag: 'New' },
     { title: 'Python Programming', price: '3,000', students: '2.1k', rating: '5.0', tag: 'Trending' }
   ];
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    if (email === "binmusharrafsyedsaad@gmail.com" && password === "SyedSaadi@97") {
+      setIsAdmin(true);
+      setShowAuthModal(false);
+    } else {
+      alert("Login successful!");
+      setShowAuthModal(false);
+    }
+  };
+
+  const AdminDashboard = () => (
+    <div className="flex min-h-screen bg-[#F8FAFC]">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
+        <div className="p-6 flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" className="h-8" />
+          <span className="font-bold text-green-800">Admin</span>
+        </div>
+        
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          {[
+            { name: 'Dashboard', icon: <Globe size={20}/>, active: true },
+            { name: 'Courses', icon: <PlayCircle size={20}/> },
+            { name: 'Payments', icon: <CreditCard size={20}/> },
+            { name: 'Settings', icon: <ShieldCheck size={20}/> },
+          ].map((item) => (
+            <button key={item.name} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${item.active ? 'bg-[#064e3b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              {item.icon} {item.name}
+            </button>
+          ))}
+        </nav>
+
+        <button onClick={() => setIsAdmin(false)} className="m-6 flex items-center gap-3 px-4 py-3 text-gray-500 font-bold text-sm hover:text-red-600 transition-colors">
+          <X size={20}/> Sign Out
+        </button>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-10">
+        <header className="mb-10">
+          <h1 className="text-3xl font-black text-slate-900">Dashboard Overview</h1>
+          <p className="text-gray-500 font-medium">Welcome back. Here's what's happening today.</p>
+        </header>
+
+        <div className="grid grid-cols-4 gap-6 mb-10">
+          {[
+            { label: 'Total Revenue', val: 'PKR 0', color: 'bg-green-50 text-green-600' },
+            { label: 'Total Students', val: '2', color: 'bg-blue-50 text-blue-600' },
+            { label: 'Active Courses', val: '6', color: 'bg-emerald-50 text-emerald-600' },
+            { label: 'Total Enrollments', val: '-', color: 'bg-purple-50 text-purple-600' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 flex items-center gap-4 shadow-sm">
+              <div className={`p-4 rounded-2xl ${stat.color}`}><CreditCard size={24}/></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">{stat.label}</p>
+                <p className="text-xl font-black text-gray-900">{stat.val}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-8">
+          <div className="bg-[#064e3b] rounded-[2.5rem] p-10 text-white flex flex-col justify-between">
+            <div>
+              <PlayCircle size={40} className="mb-6 opacity-80" />
+              <h2 className="text-xl font-bold mb-2">Pending Approvals</h2>
+              <p className="text-5xl font-black mb-4">3</p>
+              <p className="text-emerald-200/60 text-sm font-medium">Payments waiting for verification.</p>
+            </div>
+            <button className="w-full bg-white text-[#064e3b] py-4 rounded-2xl font-black mt-8 hover:bg-emerald-50 transition-all">
+              Review Payments
+            </button>
+          </div>
+
+          <div className="col-span-2 bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm">
+            <h3 className="text-xl font-black mb-6">Recent Activity</h3>
+            <div className="space-y-6">
+              {[
+                { email: 'saadi@mockup.media', amount: '1,999', course: 'FSc Math Board Exam Prep', date: '4/23/2026' },
+                { email: 'binmusharrafsyedsaad@gmail.com', amount: '1,999', course: 'FSc Math Board Exam Prep', date: '4/23/2026' },
+                { email: 'saadi@mockup.media', amount: '5,999', course: 'Modern Web Development with React', date: '4/22/2026' },
+              ].map((activity, i) => (
+                <div key={i} className="flex justify-between items-center pb-6 border-b border-gray-50 last:border-0">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600"><CreditCard size={18}/></div>
+                    <div>
+                      <p className="font-bold text-sm text-gray-900">Payment pending — Rs. {activity.amount}</p>
+                      <p className="text-xs text-gray-400">{activity.email} • {activity.course}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-400">{activity.date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 
   const AuthModal = () => (
     <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -47,7 +152,6 @@ export default function ParhloPakistan() {
           </p>
         </div>
 
-        {/* Google Auth Button */}
         <button className="w-full mb-6 flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -63,7 +167,7 @@ export default function ParhloPakistan() {
           <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-4 text-gray-400 font-bold tracking-widest">Or with email</span></div>
         </div>
 
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-4" onSubmit={handleLogin}>
           {authMode === 'signup' && (
             <div className="relative">
               <User className="absolute left-4 top-4 text-gray-400" size={20} />
@@ -72,14 +176,14 @@ export default function ParhloPakistan() {
           )}
           <div className="relative">
             <Mail className="absolute left-4 top-4 text-gray-400" size={20} />
-            <input type="email" placeholder="Email Address" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
+            <input name="email" type="email" required placeholder="Email Address" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
           </div>
           <div className="relative">
             <Lock className="absolute left-4 top-4 text-gray-400" size={20} />
-            <input type="password" placeholder="Password" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
+            <input name="password" type="password" required placeholder="Password" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
           </div>
 
-          <button className="w-full bg-gray-900 text-white py-4 rounded-xl font-black hover:bg-green-600 transition-all shadow-xl mt-4 uppercase tracking-wider">
+          <button type="submit" className="w-full bg-gray-900 text-white py-4 rounded-xl font-black hover:bg-green-600 transition-all shadow-xl mt-4 uppercase tracking-wider">
             {authMode === 'login' ? 'Login' : 'Sign Up'}
           </button>
         </form>
@@ -99,63 +203,7 @@ export default function ParhloPakistan() {
     </div>
   );
 
-  const LandingNav = () => (
-    <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
-      <div className="pl-8">
-        <Link href="/">
-          <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
-        </Link>
-      </div>
-      
-      <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
-        <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
-        <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
-        <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
-      </div>
-      
-      <button 
-        onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-        className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
-      >
-        Join Now
-      </button>
-    </nav>
-  );
-
-  const Footer = () => (
-    <footer className="bg-white border-t border-gray-200 pt-16 pb-10">
-      <div className="max-w-6xl mx-auto px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-2">
-            <img src="/logo.png" alt="Logo" className="h-16 mb-6" />
-            <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
-              Empowering the youth of Pakistan with digital skills that matter. Join the revolution of online learning today.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Quick Links</h4>
-            <ul className="space-y-4 text-gray-500 text-sm font-semibold">
-              <li><Link href="/courses" className="hover:text-green-600 cursor-pointer">Browse Courses</Link></li>
-              <li className="hover:text-green-600 cursor-pointer">Become an Instructor</li>
-              <li className="hover:text-green-600 cursor-pointer">Privacy Policy</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Support</h4>
-            <p className="text-gray-500 text-sm font-semibold">help@parhlopakistan.com</p>
-          </div>
-        </div>
-        
-        <div className="pt-10 border-t border-gray-100 text-center">
-          <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
-          <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base">
-            Mockup Media (SMC-Private) Limited
-          </a>
-          <p className="mt-4 text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
-        </div>
-      </div>
-    </footer>
-  );
+  if (isAdmin) return <AdminDashboard />;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-green-100">
@@ -179,9 +227,25 @@ export default function ParhloPakistan() {
         </div>
       )}
       
-      <LandingNav />
+      <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
+        <div className="pl-8">
+          <Link href="/">
+            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
+          </Link>
+        </div>
+        <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
+          <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
+          <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
+          <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
+        </div>
+        <button 
+          onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+          className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
+        >
+          Join Now
+        </button>
+      </nav>
 
-      {/* Hero Section */}
       <header className="max-w-6xl mx-auto px-8 py-20 md:py-32 text-center">
         <div className="inline-block px-5 py-2 bg-white border border-gray-200 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-500 mb-8 shadow-sm">
           🚀 Pakistan's High-Impact Skill Platform
@@ -199,7 +263,6 @@ export default function ParhloPakistan() {
         </Link>
       </header>
 
-      {/* Stats Bar */}
       <section className="max-w-6xl mx-auto px-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-32">
         {[
           { label: 'Students', val: '5,000+', icon: <Users size={22}/> },
@@ -215,7 +278,6 @@ export default function ParhloPakistan() {
         ))}
       </section>
 
-      {/* Courses Section */}
       <section className="max-w-6xl mx-auto px-8 pb-40">
         <div className="flex justify-between items-end mb-16">
           <h2 className="text-5xl font-black tracking-tight text-gray-900">Featured Courses</h2>
@@ -254,7 +316,37 @@ export default function ParhloPakistan() {
         </div>
       </section>
 
-      <Footer />
+      <footer className="bg-white border-t border-gray-200 pt-16 pb-10">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-2">
+              <img src="/logo.png" alt="Logo" className="h-16 mb-6" />
+              <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
+                Empowering the youth of Pakistan with digital skills that matter. Join the revolution of online learning today.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Quick Links</h4>
+              <ul className="space-y-4 text-gray-500 text-sm font-semibold">
+                <li><Link href="/courses" className="hover:text-green-600 cursor-pointer">Browse Courses</Link></li>
+                <li className="hover:text-green-600 cursor-pointer">Become an Instructor</li>
+                <li className="hover:text-green-600 cursor-pointer">Privacy Policy</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Support</h4>
+              <p className="text-gray-500 text-sm font-semibold">help@parhlopakistan.com</p>
+            </div>
+          </div>
+          <div className="pt-10 border-t border-gray-100 text-center">
+            <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
+            <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base">
+              Mockup Media (SMC-Private) Limited
+            </a>
+            <p className="mt-4 text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
