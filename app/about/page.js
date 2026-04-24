@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { 
   Users, 
   Target, 
@@ -13,25 +14,36 @@ import {
 
 export default function AboutPage() {
   
+  // SHARED LOGIC: Use this function to trigger your Login Modal or Registration
+  const handleJoin = () => {
+    console.log("Join trigger activated");
+    // If you have a state for a modal, trigger it here.
+    // Example: setAuthModalOpen(true);
+    // Or redirect: window.location.href = "/register";
+  };
+
   const LandingNav = () => (
     <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
       <div className="pl-8">
-        <a href="/">
+        <Link href="/">
           <img 
             src="/logo.png" 
             alt="Parhlo Pakistan Logo" 
-            className="h-20 w-auto object-contain" 
+            className="h-20 w-auto object-contain cursor-pointer" 
           />
-        </a>
+        </Link>
       </div>
       
       <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
-        <a href="/" className="hover:text-green-600 transition-colors">Home</a>
-        <span className="cursor-pointer hover:text-green-600 transition-colors">Courses</span>
-        <span className="cursor-pointer text-green-600">About</span>
+        <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
+        <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
+        <Link href="/about" className="text-green-600 transition-colors">About</Link>
       </div>
       
-      <button className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4">
+      <button 
+        onClick={handleJoin}
+        className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
+      >
         Join Now
       </button>
     </nav>
@@ -48,11 +60,11 @@ export default function AboutPage() {
           href="https://mockup.media" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="inline-block text-gray-900 hover:text-green-600 transition-all font-black text-base"
+          className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-6"
         >
           Mockup Media (SMC-Private) Limited
         </a>
-        <p className="mt-4 text-gray-300 text-[10px]">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+        <p className="text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
       </div>
     </footer>
   );
@@ -106,7 +118,6 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
           <div className="relative">
             <div className="aspect-square bg-gray-100 rounded-[4rem] overflow-hidden">
-               {/* Placeholder for a professional office or team photo */}
                <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-2xl italic">
                  Parhlo Pakistan HQ
                </div>
@@ -143,11 +154,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Call to Action */}
+      {/* Call to Action - Now works like the Menu Button */}
       <section className="max-w-4xl mx-auto px-8 py-32 text-center">
         <Heart className="mx-auto text-red-500 mb-8" size={48} fill="currentColor" />
         <h2 className="text-4xl font-black mb-8">Ready to grow with us?</h2>
-        <button className="bg-gray-900 text-white px-12 py-5 rounded-full font-black text-lg hover:bg-green-600 transition-all shadow-2xl">
+        <button 
+          onClick={handleJoin}
+          className="bg-gray-900 text-white px-12 py-5 rounded-full font-black text-lg hover:bg-green-600 transition-all shadow-2xl"
+        >
           Join the Community
         </button>
       </section>

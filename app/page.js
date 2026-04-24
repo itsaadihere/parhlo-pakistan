@@ -303,12 +303,15 @@ export default function ParhloPakistan() {
                 <h3 className="text-2xl font-black mb-10 leading-tight group-hover:text-green-600 transition-colors">{course.title}</h3>
                 <div className="flex justify-between items-center pt-6 border-t border-gray-50">
                   <span className="text-2xl font-black text-gray-900">Rs. {course.price}</span>
-                  <button 
-                    onClick={() => setShowPaymentModal(course)}
-                    className="bg-gray-100 hover:bg-green-600 hover:text-white px-8 py-3 rounded-2xl font-bold transition-all text-gray-900"
-                  >
-                    Enroll
-                  </button>
+                  
+                  {/* DETAIL BUTTON POINTING TO COURSE PAGE */}
+                  <Link href={`/courses/${course.title.toLowerCase().replace(/ /g, '-')}`}>
+                    <button 
+                      className="bg-gray-100 hover:bg-[#064e3b] hover:text-white px-8 py-3 rounded-2xl font-black transition-all text-gray-900 uppercase text-[10px] tracking-widest"
+                    >
+                      Detail
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>
