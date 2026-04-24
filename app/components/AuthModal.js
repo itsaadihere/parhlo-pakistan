@@ -15,10 +15,16 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
 
     // Admin Credentials Check
     if (email === "binmusharrafsyedsaad@gmail.com" && password === "SyedSaadi@97") {
-      onLoginSuccess(true);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('parhloAdmin', 'true');
+      }
+      onLoginSuccess && onLoginSuccess(true);
     } else {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('parhloAdmin', 'false');
+      }
       alert("Login successful!");
-      onLoginSuccess(false);
+      onLoginSuccess && onLoginSuccess(false);
     }
     onClose();
   };

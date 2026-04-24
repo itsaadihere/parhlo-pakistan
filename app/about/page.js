@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'; // Added useState
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthModal from '@/app/components/AuthModal'; // Import your AuthModal component
 import { 
   Users, 
@@ -16,9 +17,15 @@ import {
 export default function AboutPage() {
   // State to control the visibility of the login/signup popup
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const router = useRouter();
   
   const handleJoin = () => {
     setShowAuthModal(true); // Triggers the modal to open
+  };
+
+  const handleLoginSuccess = (isAdmin) => {
+    setShowAuthModal(false);
+    if (isAdmin) router.push('/');
   };
 
   const LandingNav = () => (
@@ -172,7 +179,8 @@ export default function AboutPage() {
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          initialMode="signup"
+          initialMode="login"
+          onLoginSuccess={handleLoginSuccess}
         />
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthModal from '@/app/components/AuthModal';
 import { 
   PlayCircle, 
@@ -13,6 +14,12 @@ import {
 
 export default function AllCourses() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const router = useRouter();
+
+  const handleLoginSuccess = (isAdmin) => {
+    setShowAuthModal(false);
+    if (isAdmin) router.push('/');
+  };
 
   const courses = [
     { title: 'WordPress Mastery', price: '2,500', students: '1.2k', rating: '4.9', tag: 'Bestseller', slug: 'wordpress-mastery', imageClass: 'from-slate-900 via-slate-700 to-green-600', description: 'Launch professional WordPress websites and start freelancing with a proven workflow.' },
@@ -86,7 +93,8 @@ export default function AllCourses() {
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          initialMode="signup"
+          initialMode="login"
+          onLoginSuccess={handleLoginSuccess}
         />
       )}
 
