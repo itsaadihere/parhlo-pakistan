@@ -14,6 +14,12 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Parhlo Pakistan",
   description: "EdTech Portal for GenZ",
+  // This explicitly tells the browser where to find your symbol
+  icons: {
+    icon: "/icon.png", 
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }) {
