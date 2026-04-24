@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Added useState
 import Link from 'next/link';
+import AuthModal from '@/app/components/AuthModal'; // Import your AuthModal component
 import { 
   Users, 
   Target, 
@@ -13,13 +14,11 @@ import {
 } from 'lucide-react';
 
 export default function AboutPage() {
+  // State to control the visibility of the login/signup popup
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // SHARED LOGIC: Use this function to trigger your Login Modal or Registration
   const handleJoin = () => {
-    console.log("Join trigger activated");
-    // If you have a state for a modal, trigger it here.
-    // Example: setAuthModalOpen(true);
-    // Or redirect: window.location.href = "/register";
+    setShowAuthModal(true); // Triggers the modal to open
   };
 
   const LandingNav = () => (
@@ -154,7 +153,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Call to Action - Now works like the Menu Button */}
+      {/* Call to Action */}
       <section className="max-w-4xl mx-auto px-8 py-32 text-center">
         <Heart className="mx-auto text-red-500 mb-8" size={48} fill="currentColor" />
         <h2 className="text-4xl font-black mb-8">Ready to grow with us?</h2>
@@ -167,6 +166,15 @@ export default function AboutPage() {
       </section>
 
       <Footer />
+
+      {/* ACTUAL MODAL RENDERING: This is what was missing */}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode="signup"
+        />
+      )}
     </div>
   );
 }
