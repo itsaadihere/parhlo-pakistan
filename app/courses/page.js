@@ -21,7 +21,7 @@ export default function AllCourses() {
     if (isAdmin) router.push('/');
   };
 
-  const courses = [
+  const baseCourses = [
     { title: 'WordPress Mastery', price: '2,500', students: '1.2k', rating: '4.9', tag: 'Bestseller', slug: 'wordpress-mastery', imageClass: 'from-slate-900 via-slate-700 to-green-600', description: 'Launch professional WordPress websites and start freelancing with a proven workflow.' },
     { title: 'Excel for Accountants', price: '1,500', students: '850', rating: '4.8', tag: 'New', slug: 'excel-for-accountants', imageClass: 'from-emerald-900 via-emerald-700 to-lime-500', description: 'Build fast accounting workflows with Excel and prepare client-ready financial reports.' },
     { title: 'Python Programming', price: '3,000', students: '2.1k', rating: '5.0', tag: 'Trending', slug: 'python-programming', imageClass: 'from-sky-900 via-sky-600 to-cyan-400', description: 'Master Python scripting, automation, and practical programming skills for digital work.' },
@@ -30,6 +30,30 @@ export default function AllCourses() {
     { title: 'Data Science Fundamentals', price: '3,500', students: '1.8k', rating: '4.7', tag: 'Professional', slug: 'data-science-fundamentals', imageClass: 'from-slate-900 via-blue-700 to-emerald-400', description: 'Use data analysis and visualization to make smarter decisions in business.' },
     { title: 'Social Media Marketing', price: '2,200', students: '1.4k', rating: '4.6', tag: 'Business', slug: 'social-media-marketing', imageClass: 'from-amber-900 via-orange-600 to-red-400', description: 'Grow brands and campaigns with practical social media marketing skills.' },
   ];
+
+  const [courses, setCourses] = useState(baseCourses);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
+    if (!stored.length) return;
+
+    const persistedCourses = stored.map((course) => ({
+      title: course.name,
+      price: course.price || '0',
+      students: course.students || '0',
+      rating: course.rating || '0',
+      tag: course.tag || 'New',
+      slug: course.slug,
+      imageClass: 'from-slate-900 via-slate-700 to-green-600',
+      description: course.category ? `${course.category} course` : 'New course content available now.',
+    }));
+
+    setCourses((prev) => {
+      const slugs = new Set(prev.map((course) => course.slug));
+      return [...prev, ...persistedCourses.filter((course) => !slugs.has(course.slug))];
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-green-100">

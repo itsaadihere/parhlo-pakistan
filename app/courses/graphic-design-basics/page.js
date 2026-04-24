@@ -17,6 +17,7 @@ import {
 export default function CourseDetail() {
   const [activeTab, setActiveTab] = useState('curriculum');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [previewLecture, setPreviewLecture] = useState(null);
 
   const courseData = {
     title: "Graphic Design Basics",
@@ -118,6 +119,18 @@ export default function CourseDetail() {
               Course Content <span className="ml-2 text-sm text-gray-300 font-medium px-2 py-0.5 bg-gray-50 rounded-lg">{courseData.curriculum.length} Lectures</span>
             </button>
           </div>
+
+          {previewLecture !== null && courseData.curriculum[previewLecture] && (
+            <div className="mb-10 rounded-[2rem] border border-green-200 bg-green-50 p-8">
+              <h3 className="text-xl font-black text-green-900">Free Preview</h3>
+              <p className="mt-3 text-base font-bold text-slate-900">{courseData.curriculum[previewLecture].title}</p>
+              <p className="mt-2 text-sm text-green-700">{courseData.curriculum[previewLecture].sub}</p>
+              <button type="button" onClick={() => setPreviewLecture(null)} className="mt-6 rounded-full border border-green-200 bg-white px-6 py-3 text-green-700 font-bold hover:bg-green-100 transition-all">
+                Close Preview
+              </button>
+            </div>
+          )}
+
           <div className="space-y-4">
             {courseData.curriculum.map((item, idx) => (
               <div 
@@ -137,7 +150,7 @@ export default function CourseDetail() {
                   <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-md">{item.sub}</p>
                 </div>
                 {item.isFree && (
-                  <button className="bg-white border border-gray-200 px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm hover:border-green-600 transition-colors">
+                  <button onClick={() => setPreviewLecture(idx)} className="bg-white border border-gray-200 px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm hover:border-green-600 transition-colors">
                     Free Preview
                   </button>
                 )}

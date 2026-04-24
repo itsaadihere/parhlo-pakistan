@@ -72,6 +72,27 @@ export default function ParhloPakistan() {
     if (typeof window !== 'undefined') {
       const savedAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
       setIsAdmin(savedAdmin);
+
+      const storedCourses = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
+      if (storedCourses.length) {
+        const persistedCourseData = storedCourses.map((course) => ({
+          title: course.name,
+          slug: course.slug,
+          category: course.category || 'Uncategorized',
+          price: course.price || '0',
+          students: course.students || '0',
+          rating: course.rating || '0',
+          tag: course.tag || 'New',
+        }));
+
+        setAdminCourses((prev) => {
+          const existingSlugs = new Set(prev.map((item) => item.slug));
+          return [
+            ...prev,
+            ...persistedCourseData.filter((item) => !existingSlugs.has(item.slug)),
+          ];
+        });
+      }
     }
   }, []);
 
