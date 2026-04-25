@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import ShareModal from '@/app/components/ShareModal';
+import AuthModal from '@/app/components/AuthModal';
 import {
   PlayCircle,
   Lock,
@@ -12,7 +13,10 @@ import {
   BarChart,
   User,
   CheckCircle2,
-  Share2
+  Share2,
+  X,
+  CreditCard,
+  Upload
 } from 'lucide-react';
 
 const parsePriceValue = (value) => {
@@ -28,9 +32,36 @@ const formatCurrency = (value) => {
 
 export default function DynamicCourseDetail() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug;
   const [courseData, setCourseData] = useState(null);
+  
+  // Modals & User State
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // Payment Form State
+  const [transactionId, setTransactionId] = useState('');
+  const [receiptImage, setReceiptImage] = useState(null);
+  const fileInputRef = React.useRef(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // Access Control State
+  const [userEmail, setUserEmail] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState(null); // null | 'pending' | 'approved'
+  
+  // Video Player State
   const [previewLecture, setPreviewLecture] = useState(null);
   const [showPreviewOverlay, setShowPreviewOverlay] = useState(false);
 
@@ -39,15 +70,36 @@ export default function DynamicCourseDetail() {
     ? `https://www.youtube-nocookie.com/embed/${previewItem.videoId}?autoplay=1&rel=0&modestbranding=1&controls=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1&playlist=${previewItem.videoId}`
     : null;
 
-  const openPreview = (index) => {
-    setPreviewLecture(index);
-    setShowPreviewOverlay(true);
+  const checkUserAccess = () => {
+    if (typeof window !== 'undefined') {
+      const email = window.localStorage.getItem('currentUserEmail');
+      const isAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
+      setUserEmail(email || '');
+      
+      if (isAdmin) {
+        setPaymentStatus('approved');
+        return;
+      }
+
+      if (email && slug) {
+        const payments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
+        const userPayment = payments.find(p => p.userEmail === email && p.courseSlug === slug);
+        if (userPayment) {
+          setPaymentStatus(userPayment.status);
+        } else {
+          setPaymentStatus(null);
+        }
+      }
+    }
   };
 
-  const closePreview = () => {
-    setShowPreviewOverlay(false);
-    setPreviewLecture(null);
-  };
+  useEffect(() => {
+    checkUserAccess();
+    
+    // Add event listener to re-check when storage changes (e.g. from AuthModal)
+    window.addEventListener('storage', checkUserAccess);
+    return () => window.removeEventListener('storage', checkUserAccess);
+  }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
@@ -66,6 +118,7 @@ export default function DynamicCourseDetail() {
 
       setCourseData({
         title: adminCourse.name || 'New Course',
+        slug: adminCourse.slug,
         category: adminCourse.category || 'New Course',
         price: adminCourse.price || '0',
         originalPrice: formatCurrency(originalPrice),
@@ -123,6 +176,79 @@ export default function DynamicCourseDetail() {
     };
   }, []);
 
+  const handleLoginSuccess = (isAdmin) => {
+    setShowAuthModal(false);
+    checkUserAccess();
+  };
+
+  const handleEnrollClick = () => {
+    if (!userEmail) {
+      setShowAuthModal(true);
+    } else {
+      setShowPaymentModal(true);
+    }
+  };
+
+  const submitPayment = () => {
+    if (!transactionId) {
+      alert("Please enter a Transaction ID");
+      return;
+    }
+    if (!receiptImage) {
+      alert("Please upload the receipt proof");
+      return;
+    }
+
+    const newPayment = {
+      id: Date.now().toString(),
+      userEmail: userEmail,
+      courseSlug: courseData.slug,
+      courseName: courseData.title,
+      transactionId: transactionId,
+      receiptImage: receiptImage,
+      status: 'pending',
+      date: new Date().toLocaleDateString()
+    };
+
+    if (typeof window !== 'undefined') {
+      const payments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
+      window.localStorage.setItem('parhloPayments', JSON.stringify([...payments, newPayment]));
+    }
+
+    setPaymentStatus('pending');
+    setShowPaymentModal(false);
+    alert("Payment submitted! An admin will review and approve your access shortly.");
+  };
+
+  const openPreview = (index) => {
+    const item = courseData.curriculum[index];
+    if (!item.isFree && paymentStatus !== 'approved') {
+      alert("You need to purchase this course to view this lecture.");
+      return;
+    }
+    setPreviewLecture(index);
+    setShowPreviewOverlay(true);
+  };
+
+  const closePreview = () => {
+    setShowPreviewOverlay(false);
+    setPreviewLecture(null);
+  };
+
+  const [watermarkPos, setWatermarkPos] = useState({ top: '10%', left: '10%' });
+
+  useEffect(() => {
+    if (showPreviewOverlay) {
+      const interval = setInterval(() => {
+        setWatermarkPos({
+          top: `${Math.floor(Math.random() * 80) + 10}%`,
+          left: `${Math.floor(Math.random() * 80) + 10}%`
+        });
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [showPreviewOverlay]);
+
   if (!courseData) {
     return (
       <div className="min-h-screen bg-white">
@@ -140,17 +266,89 @@ export default function DynamicCourseDetail() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
+      
+      {/* Modals */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        initialMode="login"
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white p-10 rounded-[2.5rem] max-w-md w-full relative shadow-2xl border border-gray-100">
+            <button onClick={() => setShowPaymentModal(false)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900 transition-colors"><X /></button>
+            <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6"><CreditCard size={28} /></div>
+            <h3 className="text-2xl font-black mb-1 text-slate-900">Buy {courseData.title}</h3>
+            <p className="text-gray-500 mb-8 text-sm font-medium">Send <span className="font-bold text-gray-900 text-lg">Rs. {courseData.salePrice}</span> to the details below.</p>
+            
+            <div className="space-y-4 mb-8">
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mb-1">EasyPaisa / JazzCash</p>
+                <p className="text-lg font-mono text-gray-900 font-bold tracking-tight">0300-1234567</p>
+                <p className="text-xs text-gray-400 mt-1">Title: Syed Saad</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest mb-1">Bank Transfer (Meezan)</p>
+                <p className="text-lg font-mono text-gray-900 font-bold tracking-tight">0123-4567891234</p>
+                <p className="text-xs text-gray-400 mt-1">Title: Parhlo Pakistan SMC</p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Transaction ID</label>
+              <input type="text" placeholder="e.g. TID123456789" className="w-full bg-white border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 font-medium" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Upload Receipt Proof</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                className="hidden" 
+              />
+              <div 
+                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors overflow-hidden ${receiptImage ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {receiptImage ? (
+                  <div className="flex flex-col items-center">
+                    <CheckCircle2 size={24} className="text-green-600 mb-2"/>
+                    <span className="text-green-600 font-bold text-sm">Receipt Uploaded Successfully</span>
+                    <img src={receiptImage} alt="Receipt preview" className="mt-4 h-24 object-contain rounded-lg border border-green-200" />
+                  </div>
+                ) : (
+                  <span className="text-gray-500 text-sm font-medium flex flex-col items-center gap-2"><Upload size={20} className="text-gray-400"/> Click to browse & upload receipt</span>
+                )}
+              </div>
+            </div>
+
+            <button onClick={submitPayment} className="w-full bg-gray-900 text-white py-4 rounded-xl font-black hover:bg-green-600 transition-all shadow-xl">SUBMIT PAYMENT</button>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
       <nav className="border-b border-gray-100 p-4 bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4">
           <Link href="/courses" className="flex items-center gap-2 text-gray-500 hover:text-green-600 font-bold transition-colors">
             <ChevronLeft size={20} /> Back to Courses
           </Link>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            {userEmail ? (
+              <Link href="/dashboard" className="text-sm font-bold text-gray-600 hover:text-green-600">Dashboard</Link>
+            ) : (
+              <button onClick={() => setShowAuthModal(true)} className="text-sm font-bold text-gray-600 hover:text-green-600">Login</button>
+            )}
             <button onClick={() => setShowShareModal(true)} className="p-2 text-gray-400 hover:text-gray-900"><Share2 size={20} /></button>
           </div>
         </div>
       </nav>
 
+      {/* Hero Section */}
       <section className="bg-[#064e3b] text-white pt-16 pb-24 px-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-white/5 skew-x-12 translate-x-20" />
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
@@ -209,9 +407,23 @@ export default function DynamicCourseDetail() {
                 <p className="text-gray-400 text-sm font-medium">One-time payment for lifetime access</p>
               </div>
 
-              <button className="w-full bg-[#064e3b] text-white py-5 rounded-2xl font-black text-lg hover:bg-green-600 transition-all shadow-xl shadow-green-900/10 mb-6">
-                Sign In to Enroll
-              </button>
+              {!userEmail ? (
+                <button onClick={handleEnrollClick} className="w-full bg-[#064e3b] text-white py-5 rounded-2xl font-black text-lg hover:bg-green-600 transition-all shadow-xl shadow-green-900/10 mb-6">
+                  Sign In to Enroll
+                </button>
+              ) : paymentStatus === 'approved' ? (
+                <button disabled className="w-full bg-green-100 text-green-800 py-5 rounded-2xl font-black text-lg mb-6 flex justify-center items-center gap-2">
+                  <CheckCircle2 size={24} /> Course Purchased
+                </button>
+              ) : paymentStatus === 'pending' ? (
+                <button disabled className="w-full bg-amber-100 text-amber-800 py-5 rounded-2xl font-black text-lg mb-6 flex justify-center items-center gap-2">
+                  <Clock size={24} /> Payment Pending Approval
+                </button>
+              ) : (
+                <button onClick={handleEnrollClick} className="w-full bg-[#064e3b] text-white py-5 rounded-2xl font-black text-lg hover:bg-green-600 transition-all shadow-xl shadow-green-900/10 mb-6">
+                  Buy Now
+                </button>
+              )}
 
               <div className="space-y-4 pt-6 border-t border-gray-50">
                 <div className="flex items-center gap-3 text-sm font-bold text-gray-600">
@@ -239,47 +451,48 @@ export default function DynamicCourseDetail() {
 
           {previewLecture !== null && courseData.curriculum[previewLecture] && (
             <div className="mb-10 rounded-[2rem] border border-green-200 bg-green-50 p-8">
-              <h3 className="text-xl font-black text-green-900">Free Preview</h3>
+              <h3 className="text-xl font-black text-green-900">Playing Lecture</h3>
               <p className="mt-3 text-base font-bold text-slate-900">{courseData.curriculum[previewLecture].title}</p>
-              <p className="mt-2 text-sm text-green-700">{courseData.curriculum[previewLecture].sub}</p>
               <button type="button" onClick={closePreview} className="mt-6 rounded-full border border-green-200 bg-white px-6 py-3 text-green-700 font-bold hover:bg-green-100 transition-all">
-                Close Preview
+                Close Video
               </button>
             </div>
           )}
 
           <div className="space-y-4">
-            {courseData.curriculum.map((item, idx) => (
-              <div
-                key={item.id}
-                className={`group flex items-start gap-6 p-6 rounded-3xl transition-all duration-300 border ${idx === 0 ? 'bg-gray-50 border-gray-100 shadow-sm' : 'bg-white border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`}
-              >
-                <div className={`mt-1 w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${item.isFree ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 group-hover:bg-white'}`}>
-                  {item.isFree ? <PlayCircle size={24} /> : <Lock size={20} />}
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-lg font-bold text-gray-900 tracking-tight">
-                      {idx + 1}. {item.title}
-                    </h4>
-                    <span className="text-xs font-bold text-gray-400 flex items-center gap-1.5"><Clock size={12} /> {item.duration}</span>
+            {courseData.curriculum.map((item, idx) => {
+              const hasAccess = item.isFree || paymentStatus === 'approved';
+              
+              return (
+                <div
+                  key={item.id}
+                  className={`group flex items-start gap-6 p-6 rounded-3xl transition-all duration-300 border ${idx === 0 ? 'bg-gray-50 border-gray-100 shadow-sm' : 'bg-white border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`}
+                >
+                  <div className={`mt-1 w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${hasAccess ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 group-hover:bg-white'}`}>
+                    {hasAccess ? <PlayCircle size={24} /> : <Lock size={20} />}
                   </div>
-                  <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-md">{item.sub}</p>
-                </div>
 
-                {item.isFree && (
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="text-lg font-bold text-gray-900 tracking-tight">
+                        {idx + 1}. {item.title}
+                      </h4>
+                      <span className="text-xs font-bold text-gray-400 flex items-center gap-1.5"><Clock size={12} /> {item.duration}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-md">{item.sub}</p>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => item.videoId ? openPreview(idx) : null}
                     disabled={!item.videoId}
-                    className={`bg-white border border-gray-200 px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm hover:border-green-600 transition-colors ${!item.videoId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`bg-white border px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm transition-colors ${hasAccess ? 'border-green-200 hover:border-green-600' : 'border-gray-200'} ${!item.videoId ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {item.videoId ? 'Free Preview' : 'Preview unavailable'}
+                    {!item.videoId ? 'Unavailable' : hasAccess ? 'Play Video' : 'Enroll to Unlock'}
                   </button>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-20 p-10 bg-gray-50 rounded-[3rem] flex flex-col md:flex-row gap-10 items-center border border-gray-100">
@@ -307,7 +520,15 @@ export default function DynamicCourseDetail() {
             >
               Close
             </button>
-            <div className="aspect-video bg-black relative">
+            <div className="aspect-video bg-black relative overflow-hidden">
+              {userEmail && (
+                <div 
+                  className="absolute pointer-events-none opacity-20 text-white font-mono text-sm font-bold z-10 transition-all duration-[5000ms] ease-in-out px-3 py-1 bg-black/50 rounded-lg"
+                  style={{ top: watermarkPos.top, left: watermarkPos.left }}
+                >
+                  {userEmail}
+                </div>
+              )}
               <iframe
                 src={previewUrl}
                 title="Course preview"

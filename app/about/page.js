@@ -17,7 +17,17 @@ import {
 export default function AboutPage() {
   // State to control the visibility of the login/signup popup
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
+      const email = window.localStorage.getItem('currentUserEmail');
+      if (isAdmin) setUserRole('admin');
+      else if (email) setUserRole('student');
+    }
+  }, []);
   
   const handleJoin = () => {
     setShowAuthModal(true); // Triggers the modal to open
@@ -25,7 +35,11 @@ export default function AboutPage() {
 
   const handleLoginSuccess = (isAdmin) => {
     setShowAuthModal(false);
-    if (isAdmin) router.push('/');
+    if (isAdmin) {
+      router.push('/admin');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const LandingNav = () => (
@@ -46,12 +60,26 @@ export default function AboutPage() {
         <Link href="/about" className="text-green-600 transition-colors">About</Link>
       </div>
       
-      <button 
-        onClick={handleJoin}
-        className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
-      >
-        Join Now
-      </button>
+      {userRole === 'admin' ? (
+        <Link href="/admin" className="mr-4">
+          <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
+            Admin Panel
+          </button>
+        </Link>
+      ) : userRole === 'student' ? (
+        <Link href="/dashboard" className="mr-4">
+          <button className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-700 transition-all shadow-lg">
+            My Dashboard
+          </button>
+        </Link>
+      ) : (
+        <button 
+          onClick={handleJoin}
+          className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
+        >
+          Join Now
+        </button>
+      )}
     </nav>
   );
 

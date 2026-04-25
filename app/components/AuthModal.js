@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Mail, Lock, User } from 'lucide-react';
+import { supabase } from '../../utils/supabase';
 
 export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLoginSuccess }) {
   const [authMode, setAuthMode] = useState(initialMode);
@@ -14,16 +15,17 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
     const password = e.target.password.value;
 
     // Admin Credentials Check
-    if (email === "binmusharrafsyedsaad@gmail.com" && password === "SyedSaadi@97") {
+    if (email === "parhlo.pakistan.edu@gmail.com" && password === "parhlo@2003") {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('parhloAdmin', 'true');
+        window.localStorage.setItem('currentUserEmail', email);
       }
       onLoginSuccess && onLoginSuccess(true);
     } else {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('parhloAdmin', 'false');
+        window.localStorage.setItem('currentUserEmail', email);
       }
-      alert("Login successful!");
       onLoginSuccess && onLoginSuccess(false);
     }
     onClose();
@@ -48,7 +50,21 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
           </p>
         </div>
 
-        <button className="w-full mb-6 flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+        <button 
+          type="button"
+          onClick={async () => {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: `${window.location.origin}/dashboard`
+              }
+            });
+            if (error) {
+              alert("Backend not configured. Please add Supabase URLs to your project.");
+            }
+          }}
+          className="w-full mb-6 flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

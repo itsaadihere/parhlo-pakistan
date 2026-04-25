@@ -22,6 +22,7 @@ export default function ParhloPakistan() {
   const [authMode, setAuthMode] = useState('login');
   const [transactionId, setTransactionId] = useState('');
   const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [userRole, setUserRole] = useState(null);
 
   // Hardcoded fallback courses if none exist in local storage yet
   const defaultCourses = [
@@ -35,12 +36,18 @@ export default function ParhloPakistan() {
     if (isAdmin) {
       router.push('/admin');
     } else {
-      router.push('/courses'); // Redirect students to the courses catalog
+      router.push('/dashboard');
     }
   };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const isAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
+      const email = window.localStorage.getItem('currentUserEmail');
+      if (isAdmin) setUserRole('admin');
+      else if (email) setUserRole('student');
+
+
       const storedCourses = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
       if (storedCourses.length > 0) {
         // Take the top 3 courses for the featured section
@@ -98,12 +105,26 @@ export default function ParhloPakistan() {
           <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
           <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
         </div>
-        <button 
-          onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-          className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
-        >
-          Join Now
-        </button>
+        {userRole === 'admin' ? (
+          <Link href="/admin" className="mr-4">
+            <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
+              Admin Panel
+            </button>
+          </Link>
+        ) : userRole === 'student' ? (
+          <Link href="/dashboard" className="mr-4">
+            <button className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-700 transition-all shadow-lg">
+              My Dashboard
+            </button>
+          </Link>
+        ) : (
+          <button 
+            onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+            className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
+          >
+            Join Now
+          </button>
+        )}
       </nav>
 
       <header className="max-w-6xl mx-auto px-8 py-20 md:py-32 text-center">
