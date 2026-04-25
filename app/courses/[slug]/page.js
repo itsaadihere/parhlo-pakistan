@@ -15,40 +15,16 @@ import {
   Share2
 } from 'lucide-react';
 
-const baseCourseData = [
-  {
-    title: 'WordPress Mastery',
-    slug: 'wordpress-mastery',
-    category: 'Web Development',
-    price: '2,500',
-    instructor: 'Syed Saad',
-    level: 'Beginner to Advanced',
-    duration: '12 Lectures',
-    description: 'Build beautiful WordPress websites, create custom themes, and launch your first freelancing project in weeks.',
-    curriculum: [
-      { id: 1, title: 'WordPress Setup & Hosting Basics', duration: '18 min', isFree: true, sub: 'Choose hosting, install WordPress, and configure your first site.' },
-      { id: 2, title: 'Theme Customization & Page Building', duration: '35 min', isFree: false, sub: 'Learn to style pages with blocks, themes, and visual builders.' },
-      { id: 3, title: 'Plugins, SEO & Performance', duration: '28 min', isFree: false, sub: 'Add essential plugins, optimize for search engines, and speed up your site.' },
-      { id: 4, title: 'E-commerce With WooCommerce', duration: '42 min', isFree: false, sub: 'Launch a shop, add products, and configure online payments.' },
-      { id: 5, title: 'Freelance Project Workflow', duration: '22 min', isFree: false, sub: 'Prepare client proposals, deploy your website, and deliver a polished handoff.' }
-    ]
-  },
-  {
-    title: 'Excel for Accountants',
-    slug: 'excel-for-accountants',
-    category: 'Finance & Accounting',
-    price: '1,500',
-    instructor: 'Syed Saad',
-    level: 'Beginner to Intermediate',
-    duration: '10 Lectures',
-    description: 'Build fast accounting workflows with Excel and prepare client-ready financial reports.',
-    curriculum: [
-      { id: 1, title: 'Excel Essentials for Accounting', duration: '20 min', isFree: true, sub: 'Master formulas and functions used in accounting workflows.' },
-      { id: 2, title: 'Financial Reporting Templates', duration: '28 min', isFree: false, sub: 'Create polished financial reports for clients and stakeholders.' },
-      { id: 3, title: 'Data Analysis with Pivot Tables', duration: '32 min', isFree: false, sub: 'Use pivot tables to analyze accounting data quickly.' }
-    ]
-  }
-];
+const parsePriceValue = (value) => {
+  if (value === undefined || value === null) return 0;
+  const numeric = String(value).replace(/[^0-9.]/g, '');
+  return parseFloat(numeric) || 0;
+};
+
+const formatCurrency = (value) => {
+  if (value === undefined || value === null || Number.isNaN(value)) return '0';
+  return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+};
 
 export default function DynamicCourseDetail() {
   const params = useParams();
@@ -83,12 +59,22 @@ export default function DynamicCourseDetail() {
     const adminCourse = stored.find((course) => course.slug === slug);
 
     if (adminCourse) {
+      const originalPrice = parsePriceValue(adminCourse.price);
+      const discountPercent = parseFloat(String(adminCourse.discount || '').replace(/[^0-9.]/g, '')) || 0;
+      const salePriceValue = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
+      const savings = discountPercent > 0 ? originalPrice - salePriceValue : 0;
+
       setCourseData({
         title: adminCourse.name || 'New Course',
         category: adminCourse.category || 'New Course',
         price: adminCourse.price || '0',
-        instructor: 'Admin Instructor',
-        level: 'All Levels',
+        originalPrice: formatCurrency(originalPrice),
+        salePrice: formatCurrency(salePriceValue),
+        discount: discountPercent > 0 ? discountPercent : 0,
+        savings: savings > 0 ? formatCurrency(savings) : null,
+        instructor: adminCourse.instructor || 'Admin Instructor',
+        instructorIntro: adminCourse.instructorIntro || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
+        level: adminCourse.level || 'All Levels',
         duration: `${adminCourse.lectures?.length || 0} Lectures`,
         description: adminCourse.description || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
         curriculum: adminCourse.lectures?.map((lecture, idx) => ({
@@ -105,9 +91,37 @@ export default function DynamicCourseDetail() {
       return;
     }
 
-    const fallback = baseCourseData.find((course) => course.slug === slug);
-    setCourseData(fallback || null);
+    setCourseData(null);
   }, [slug]);
+
+  // Security measures to deter simple URL extraction
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e) => {
+      // Prevent F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+      }
+      // Prevent Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) {
+        e.preventDefault();
+      }
+      if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   if (!courseData) {
     return (
@@ -178,10 +192,22 @@ export default function DynamicCourseDetail() {
 
           <div className="lg:absolute lg:right-0 lg:top-0">
             <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-gray-100 text-slate-900 w-full lg:w-[380px] hover:translate-y-[-4px] transition-transform duration-500">
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-black tracking-tighter text-gray-900 font-mono">PKR {courseData.price}</span>
+              <div className="flex flex-col gap-3 mb-4">
+                <div className="flex flex-wrap items-end gap-4">
+                  <div>
+                    <p className="text-4xl font-black tracking-tighter text-gray-900 font-mono">PKR {courseData.salePrice}</p>
+                    {courseData.discount > 0 && (
+                      <p className="text-sm text-gray-500 line-through">PKR {courseData.originalPrice}</p>
+                    )}
+                  </div>
+                  {courseData.discount > 0 && (
+                    <div className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-emerald-800">
+                      Save {courseData.discount}%{courseData.savings ? ` · PKR ${courseData.savings}` : ''}
+                    </div>
+                  )}
+                </div>
+                <p className="text-gray-400 text-sm font-medium">One-time payment for lifetime access</p>
               </div>
-              <p className="text-gray-400 text-sm font-medium mb-8">One-time payment for lifetime access</p>
 
               <button className="w-full bg-[#064e3b] text-white py-5 rounded-2xl font-black text-lg hover:bg-green-600 transition-all shadow-xl shadow-green-900/10 mb-6">
                 Sign In to Enroll
@@ -264,7 +290,7 @@ export default function DynamicCourseDetail() {
               <p className="text-[10px] uppercase font-black text-green-600 tracking-[0.2em] mb-2">Taught by</p>
               <h3 className="text-3xl font-black text-gray-900 mb-4 tracking-tighter">{courseData.instructor}</h3>
               <p className="text-gray-500 font-medium leading-relaxed italic">
-                "This course is designed to help you learn at your own pace with practical examples and full support."
+                {courseData.instructorIntro}
               </p>
             </div>
           </div>
@@ -281,13 +307,14 @@ export default function DynamicCourseDetail() {
             >
               Close
             </button>
-            <div className="aspect-video bg-black">
+            <div className="aspect-video bg-black relative">
               <iframe
                 src={previewUrl}
                 title="Course preview"
                 className="h-full w-full"
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
+                sandbox="allow-scripts allow-same-origin allow-presentation"
               />
             </div>
           </div>

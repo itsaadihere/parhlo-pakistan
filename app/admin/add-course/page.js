@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, PlayCircle, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, PlayCircle, Plus, X } from 'lucide-react';
 
 const extractYouTubeId = (value) => {
   try {
@@ -28,10 +28,24 @@ export default function AdminAddCoursePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [levelDropdownOpen, setLevelDropdownOpen] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [instructors, setInstructors] = useState([]);
+  const [instructorIntroMap, setInstructorIntroMap] = useState({});
+  const levelWrapperRef = useRef(null);
+  const categoryWrapperRef = useRef(null);
+  const instructorWrapperRef = useRef(null);
+  const levelOptions = ['Basic', 'Medium', 'Advance'];
   const [form, setForm] = useState({
     name: '',
     slug: '',
+    description: '',
+    level: 'Basic',
     category: '',
+    instructor: '',
+    instructorIntro: '',
     price: '',
     discount: '',
     lectures: [
@@ -50,6 +64,53 @@ export default function AdminAddCoursePage() {
     setIsAdmin(true);
   }, [router]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (levelWrapperRef.current && !levelWrapperRef.current.contains(event.target)) {
+        setLevelDropdownOpen(false);
+      }
+      if (categoryWrapperRef.current && !categoryWrapperRef.current.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+      if (instructorWrapperRef.current && !instructorWrapperRef.current.contains(event.target)) {
+        setInstructorDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
+    const categorySet = new Set();
+    const instructorSet = new Set();
+    const introMap = {};
+
+    stored.forEach((course) => {
+      const category = String(course.category || '').trim();
+      const instructor = String(course.instructor || '').trim();
+      const intro = String(course.instructorIntro || '').trim();
+      if (category) categorySet.add(category);
+      if (instructor) instructorSet.add(instructor);
+      if (instructor && intro && !introMap[instructor.toLowerCase()]) {
+        introMap[instructor.toLowerCase()] = intro;
+      }
+    });
+
+    setCategories(Array.from(categorySet));
+    setInstructors(Array.from(instructorSet));
+    setInstructorIntroMap(introMap);
+  }, []);
+
+  useEffect(() => {
+    const key = String(form.instructor || '').trim().toLowerCase();
+    if (key && instructorIntroMap[key]) {
+      setForm((prev) => ({ ...prev, instructorIntro: instructorIntroMap[key] }));
+    }
+  }, [form.instructor, instructorIntroMap]);
+
   const slugFromName = useMemo(() => {
     return form.name
       .trim()
@@ -65,6 +126,27 @@ export default function AdminAddCoursePage() {
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleCategoryInput = (value) => {
+    updateField('category', value);
+    setCategoryDropdownOpen(true);
+  };
+
+  const handleInstructorInput = (value) => {
+    updateField('instructor', value);
+    setInstructorDropdownOpen(true);
+  };
+
+  const filteredCategories = categories
+    .filter((category) => category.toLowerCase().includes(String(form.category || '').trim().toLowerCase()))
+    .slice(0, 5);
+
+  const filteredInstructors = instructors
+    .filter((instructor) => instructor.toLowerCase().includes(String(form.instructor || '').trim().toLowerCase()))
+    .slice(0, 5);
+
+  const isKnownCategory = categories.some((category) => category.toLowerCase() === String(form.category || '').trim().toLowerCase());
+  const isKnownInstructor = instructors.some((instructor) => instructor.toLowerCase() === String(form.instructor || '').trim().toLowerCase());
 
   const updateLecture = (index, field, value) => {
     setForm((prev) => {
@@ -93,7 +175,7 @@ export default function AdminAddCoursePage() {
   };
 
   const validateForm = () => {
-    if (!form.name || !form.slug || !form.category || !form.price) {
+    if (!form.name || !form.slug || !form.description || !form.level || !form.category || !form.instructor || !form.instructorIntro || !form.price) {
       setError('Please fill all required course fields.');
       return false;
     }
@@ -116,20 +198,26 @@ export default function AdminAddCoursePage() {
 
     if (typeof window !== 'undefined') {
       const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
+      const slugExists = stored.some((course) => course.slug === form.slug);
+      if (slugExists) {
+        setError('This course already exists. Change the course name so the slug is unique.');
+        return;
+      }
       window.localStorage.setItem('adminCourses', JSON.stringify([...stored, form]));
-      setSuccess('Course saved successfully. It will appear in the admin course list.');
-      window.setTimeout(() => setSuccess(''), 3000);
-      setForm({
-        name: '',
-        slug: '',
-        category: '',
-        price: '',
-        discount: '',
-        lectures: [
-          { title: 'Demo Lecture', url: '', videoId: '', type: 'demo' },
-          { title: 'Lecture 1', url: '', videoId: '', type: 'lecture' }
-        ]
-      });
+      if (form.category && !categories.some((cat) => cat.toLowerCase() === form.category.trim().toLowerCase())) {
+        setCategories((prev) => [...prev, form.category.trim()]);
+      }
+      if (form.instructor && !instructors.some((inst) => inst.toLowerCase() === form.instructor.trim().toLowerCase())) {
+        setInstructors((prev) => [...prev, form.instructor.trim()]);
+      }
+      if (form.instructor && form.instructorIntro) {
+        setInstructorIntroMap((prev) => ({
+          ...prev,
+          [form.instructor.trim().toLowerCase()]: form.instructorIntro.trim(),
+        }));
+      }
+      router.push('/admin');
+      return;
     }
   };
 
@@ -169,13 +257,128 @@ export default function AdminAddCoursePage() {
                   className="mt-3 w-full rounded-3xl border border-gray-200 bg-gray-100 px-5 py-4 text-gray-500"
                 />
               </label>
-              <label className="block">
+              <label className="block lg:col-span-2">
+                <span className="text-sm font-bold text-gray-700">Course Description</span>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  placeholder="Enter a short course description"
+                  rows={4}
+                  className="mt-3 w-full rounded-3xl border border-gray-200 bg-white px-5 py-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none"
+                />
+              </label>
+              <label className="block" ref={levelWrapperRef}>
+                <span className="text-sm font-bold text-gray-700">Course Level</span>
+                <div className="relative mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setLevelDropdownOpen((prev) => !prev)}
+                    className="w-full rounded-[2rem] border border-green-200 bg-white px-5 py-4 pr-12 text-left text-gray-900 font-semibold shadow-sm transition duration-200 hover:border-green-300 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                  >
+                    <span>{form.level}</span>
+                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-green-700" />
+                  </button>
+
+                  {levelDropdownOpen && (
+                    <div className="absolute left-0 right-0 z-20 mt-2 rounded-[2rem] border border-green-200 bg-white shadow-2xl">
+                      <ul className="overflow-hidden rounded-[2rem]">
+                        {levelOptions.map((option) => (
+                          <li key={option}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateField('level', option);
+                                setLevelDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-5 py-4 text-gray-900 transition hover:bg-green-50 hover:text-green-700"
+                            >
+                              {option}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </label>
+              <label className="block" ref={categoryWrapperRef}>
                 <span className="text-sm font-bold text-gray-700">Category</span>
-                <input
-                  value={form.category}
-                  onChange={(e) => updateField('category', e.target.value)}
-                  placeholder="Enter category"
-                  className="mt-3 w-full rounded-3xl border border-gray-200 bg-white px-5 py-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                <div className="relative mt-3">
+                  <input
+                    value={form.category}
+                    onChange={(e) => handleCategoryInput(e.target.value)}
+                    onFocus={() => setCategoryDropdownOpen(true)}
+                    placeholder="Enter category"
+                    className="w-full rounded-[2rem] border border-green-200 bg-white px-5 py-4 outline-none text-gray-900 shadow-sm transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  />
+                  {categoryDropdownOpen && filteredCategories.length > 0 && (
+                    <div className="absolute left-0 right-0 z-20 mt-2 rounded-[2rem] border border-green-200 bg-white shadow-2xl">
+                      <ul className="overflow-hidden rounded-[2rem]">
+                        {filteredCategories.map((category) => (
+                          <li key={category}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateField('category', category);
+                                setCategoryDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-5 py-4 text-gray-900 transition hover:bg-green-50 hover:text-green-700"
+                            >
+                              {category}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                {!isKnownCategory && form.category.trim() !== '' && (
+                  <p className="mt-2 text-sm text-green-700">Adding new category</p>
+                )}
+              </label>
+              <label className="block" ref={instructorWrapperRef}>
+                <span className="text-sm font-bold text-gray-700">Instructor Name</span>
+                <div className="relative mt-3">
+                  <input
+                    value={form.instructor}
+                    onChange={(e) => handleInstructorInput(e.target.value)}
+                    onFocus={() => setInstructorDropdownOpen(true)}
+                    placeholder="Enter instructor name"
+                    className="w-full rounded-[2rem] border border-green-200 bg-white px-5 py-4 outline-none text-gray-900 shadow-sm transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                  />
+                  {instructorDropdownOpen && filteredInstructors.length > 0 && (
+                    <div className="absolute left-0 right-0 z-20 mt-2 rounded-[2rem] border border-green-200 bg-white shadow-2xl">
+                      <ul className="overflow-hidden rounded-[2rem]">
+                        {filteredInstructors.map((instructor) => (
+                          <li key={instructor}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateField('instructor', instructor);
+                                setInstructorDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-5 py-4 text-gray-900 transition hover:bg-green-50 hover:text-green-700"
+                            >
+                              {instructor}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                {!isKnownInstructor && form.instructor.trim() !== '' && (
+                  <p className="mt-2 text-sm text-green-700">Adding new instructor</p>
+                )}
+              </label>
+              <label className="block lg:col-span-2">
+                <span className="text-sm font-bold text-gray-700">Instructor Intro</span>
+                <textarea
+                  value={form.instructorIntro}
+                  onChange={(e) => updateField('instructorIntro', e.target.value)}
+                  placeholder="Write a brief intro for the instructor"
+                  rows={3}
+                  className="mt-3 w-full rounded-3xl border border-gray-200 bg-white px-5 py-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none"
                 />
               </label>
               <label className="block">
@@ -187,7 +390,7 @@ export default function AdminAddCoursePage() {
                   className="mt-3 w-full rounded-3xl border border-gray-200 bg-white px-5 py-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                 />
               </label>
-              <label className="block lg:col-span-2">
+              <label className="block">
                 <span className="text-sm font-bold text-gray-700">Discount (optional)</span>
                 <input
                   value={form.discount}
@@ -273,9 +476,19 @@ export default function AdminAddCoursePage() {
                     <div className="mb-3 flex items-center gap-2 text-sm text-gray-500">
                       <PlayCircle size={16} /> Secure player preview
                     </div>
-                    <div className="h-48 rounded-3xl bg-black/5 flex items-center justify-center text-gray-500 text-sm">
-                      {lecture.videoId ? 'Private YouTube video will play here' : 'Enter a valid URL to preview'}
-                    </div>
+                    <div className="h-48 rounded-3xl bg-black/5 overflow-hidden">
+                    {lecture.videoId ? (
+                      <img
+                        src={`https://img.youtube.com/vi/${lecture.videoId}/hqdefault.jpg`}
+                        alt="YouTube thumbnail preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-gray-500 text-sm">
+                        Enter a valid URL to preview
+                      </div>
+                    )}
+                  </div>
                   </div>
                 </div>
               ))}
