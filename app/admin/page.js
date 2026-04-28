@@ -19,6 +19,8 @@ import {
   Clock
 } from 'lucide-react';
 
+import { supabase } from '@/utils/supabase';
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -27,6 +29,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
   const [viewingReceipt, setViewingReceipt] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -37,12 +40,52 @@ export default function AdminDashboard() {
     }
     setIsAdmin(true);
 
-    const storedCourses = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-    setAdminCourses(storedCourses);
+    fetchData();
+  }, []);
 
-    const storedPayments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
-    setPayments(storedPayments);
-  }, [router]);
+  const fetchData = async () => {
+    setLoading(true);
+    
+    // Fetch courses from Supabase
+    const { data: courses, error: coursesError } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (coursesError) {
+      console.error('Error fetching courses:', coursesError);
+    } else {
+      setAdminCourses(courses || []);
+    }
+
+    // Fetch payments from Supabase 'purchases' table
+    const { data: purchases, error: purchasesError } = await supabase
+      .from('purchases')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (purchasesError) {
+      console.error('Error fetching payments:', purchasesError);
+    } else if (purchases) {
+      // Map purchases to include course names for display
+      const mappedPayments = purchases.map(p => {
+        const course = (courses || []).find(c => c.slug === p.course_slug);
+        return {
+          id: p.id,
+          userEmail: p.student_email,
+          courseSlug: p.course_slug,
+          courseName: course ? course.name : p.course_slug,
+          status: p.status,
+          receiptImage: p.payment_screenshot_url,
+          date: new Date(p.created_at).toLocaleDateString(),
+          transactionId: 'N/A' // Not explicitly in schema, but can be added
+        };
+      });
+      setPayments(mappedPayments);
+    }
+    
+    setLoading(false);
+  };
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -55,13 +98,21 @@ export default function AdminDashboard() {
     setPendingDeleteCourse(course);
   };
 
-  const confirmDeleteCourse = () => {
+  const confirmDeleteCourse = async () => {
     if (!pendingDeleteCourse) return;
-    const updatedCourses = adminCourses.filter((course) => course.slug !== pendingDeleteCourse.slug);
-    setAdminCourses(updatedCourses);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('adminCourses', JSON.stringify(updatedCourses));
+
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('slug', pendingDeleteCourse.slug);
+
+    if (error) {
+      console.error('Error deleting course:', error);
+      alert('Failed to delete course from database.');
+    } else {
+      setAdminCourses(adminCourses.filter((course) => course.slug !== pendingDeleteCourse.slug));
     }
+    
     setPendingDeleteCourse(null);
   };
 
@@ -69,13 +120,20 @@ export default function AdminDashboard() {
     setPendingDeleteCourse(null);
   };
 
-  const handleApprovePayment = (paymentId) => {
-    const updatedPayments = payments.map(p => 
-      p.id === paymentId ? { ...p, status: 'approved' } : p
-    );
-    setPayments(updatedPayments);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('parhloPayments', JSON.stringify(updatedPayments));
+  const handleApprovePayment = async (paymentId) => {
+    const { error } = await supabase
+      .from('purchases')
+      .update({ status: 'approved' })
+      .eq('id', paymentId);
+
+    if (error) {
+      console.error('Error approving payment:', error);
+      alert('Failed to approve payment in database.');
+    } else {
+      const updatedPayments = payments.map(p => 
+        p.id === paymentId ? { ...p, status: 'approved' } : p
+      );
+      setPayments(updatedPayments);
     }
   };
 

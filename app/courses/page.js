@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AuthModal from '@/app/components/AuthModal';
@@ -12,9 +12,12 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+import { supabase } from '@/utils/supabase';
+
 export default function AllCourses() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const handleLoginSuccess = (isAdmin) => {
@@ -51,7 +54,7 @@ export default function AllCourses() {
     return parseStudentCount(students) >= 5;
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const isAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
@@ -59,22 +62,34 @@ export default function AllCourses() {
     if (isAdmin) setUserRole('admin');
     else if (email) setUserRole('student');
 
-    const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-    if (!stored.length) return;
-
-    const persistedCourses = stored.map((course) => ({
-      title: course.name,
-      price: course.price || '0',
-      students: course.students || '0',
-      rating: course.rating || '0',
-      tag: course.tag || 'New',
-      slug: course.slug,
-      imageClass: 'from-slate-900 via-slate-700 to-green-600',
-      description: course.category ? `${course.category} course` : 'New course content available now.',
-    }));
-
-    setCourses(persistedCourses);
+    fetchAllCourses();
   }, []);
+
+  const fetchAllCourses = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching courses:', error);
+      setCourses([]);
+    } else if (data) {
+      const persistedCourses = data.map((course) => ({
+        title: course.name,
+        price: course.price || '0',
+        students: course.students || '0',
+        rating: course.rating || '5.0',
+        tag: course.tag || 'New',
+        slug: course.slug,
+        imageClass: 'from-slate-900 via-slate-700 to-green-600',
+        description: course.category ? `${course.category} course` : 'New course content available now.',
+      }));
+      setCourses(persistedCourses);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-green-100">

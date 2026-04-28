@@ -15,6 +15,8 @@ import {
   Users
 } from 'lucide-react';
 
+import { supabase } from '@/utils/supabase';
+
 export default function ParhloPakistan() {
   const router = useRouter();
   const [showPaymentModal, setShowPaymentModal] = useState(null);
@@ -23,13 +25,7 @@ export default function ParhloPakistan() {
   const [transactionId, setTransactionId] = useState('');
   const [featuredCourses, setFeaturedCourses] = useState([]);
   const [userRole, setUserRole] = useState(null);
-
-  // Hardcoded fallback courses if none exist in local storage yet
-  const defaultCourses = [
-    { title: 'WordPress Mastery', price: '2,500', students: '1.2k', rating: '4.9', tag: 'Bestseller', slug: 'wordpress-mastery' },
-    { title: 'Excel for Accountants', price: '1,500', students: '850', rating: '4.8', tag: 'New', slug: 'excel-for-accountants' },
-    { title: 'Python Programming', price: '3,000', students: '2.1k', rating: '5.0', tag: 'Trending', slug: 'python-programming' }
-  ];
+  const [loading, setLoading] = useState(true);
 
   const handleLoginSuccess = (isAdmin) => {
     setShowAuthModal(false);
@@ -47,24 +43,37 @@ export default function ParhloPakistan() {
       if (isAdmin) setUserRole('admin');
       else if (email) setUserRole('student');
 
-
-      const storedCourses = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-      if (storedCourses.length > 0) {
-        // Take the top 3 courses for the featured section
-        const mappedCourses = storedCourses.slice(0, 3).map(course => ({
-          title: course.name,
-          slug: course.slug,
-          price: course.price || '0',
-          students: course.students || '0',
-          rating: course.rating || '0',
-          tag: course.tag || 'New'
-        }));
-        setFeaturedCourses(mappedCourses);
-      } else {
-        setFeaturedCourses(defaultCourses);
-      }
+      fetchFeaturedCourses();
     }
   }, []);
+
+  const fetchFeaturedCourses = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .limit(3)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching featured courses:', error);
+      // Fallback to empty if DB fails
+      setFeaturedCourses([]);
+    } else if (data && data.length > 0) {
+      const mappedCourses = data.map(course => ({
+        title: course.name,
+        slug: course.slug,
+        price: course.price || '0',
+        students: course.students || '0',
+        rating: course.rating || '5.0',
+        tag: course.tag || 'New'
+      }));
+      setFeaturedCourses(mappedCourses);
+    } else {
+      setFeaturedCourses([]);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-green-100">

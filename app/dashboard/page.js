@@ -56,34 +56,56 @@ export default function StudentDashboard() {
       setUserEmail(email);
       setStudentName(email.split('@')[0]);
 
-      const payments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
-      const userPayments = payments.filter(p => p.userEmail === email);
-      
-      setPendingPayments(userPayments.filter(p => p.status === 'pending'));
-      
-      const approvedPayments = userPayments.filter(p => p.status === 'approved');
-      const adminCourses = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-      
-      // Map approved payments to full course details
-      const activeCourses = approvedPayments.map(payment => {
-        const course = adminCourses.find(c => c.slug === payment.courseSlug);
-        if (!course) return null;
-        return {
-          title: course.name,
-          slug: course.slug,
-          category: course.category || 'Course',
-          progress: 0, // Mock progress
-          totalLectures: course.lectures?.length || 0,
-          completedLectures: 0,
-          imageClass: 'from-slate-900 via-slate-700 to-green-600'
-        };
-      }).filter(Boolean);
+      // Fetch all purchases for this user from Supabase
+      const { data: userPurchases, error: purchasesError } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('student_email', email);
 
-      setEnrolledCourses(activeCourses);
+      if (purchasesError) {
+        console.error('Error fetching student purchases:', purchasesError);
+        setPendingPayments([]);
+        setEnrolledCourses([]);
+      } else if (userPurchases) {
+        // Map pending payments
+        const pending = userPurchases
+          .filter(p => p.status === 'pending')
+          .map(p => ({
+            id: p.id,
+            courseName: p.course_slug, // Ideally we join with courses table
+            transactionId: 'N/A',
+            date: new Date(p.created_at).toLocaleDateString(),
+            status: 'pending'
+          }));
+        setPendingPayments(pending);
+
+        // Fetch all courses to match with approved purchases
+        const { data: adminCourses, error: coursesError } = await supabase
+          .from('courses')
+          .select('*');
+
+        if (!coursesError && adminCourses) {
+          const approved = userPurchases.filter(p => p.status === 'approved');
+          const activeCourses = approved.map(purchase => {
+            const course = adminCourses.find(c => c.slug === purchase.course_slug);
+            if (!course) return null;
+            return {
+              title: course.name,
+              slug: course.slug,
+              category: course.category || 'Course',
+              progress: 0,
+              totalLectures: course.lectures?.length || 0,
+              completedLectures: 0,
+              imageClass: 'from-slate-900 via-slate-700 to-green-600'
+            };
+          }).filter(Boolean);
+          setEnrolledCourses(activeCourses);
+        }
+      }
     };
 
     initDashboard();
-  }, [router]);
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {

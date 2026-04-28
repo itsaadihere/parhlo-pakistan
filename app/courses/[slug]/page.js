@@ -30,11 +30,14 @@ const formatCurrency = (value) => {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
 };
 
+import { supabase } from '@/utils/supabase';
+
 export default function DynamicCourseDetail() {
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug;
   const [courseData, setCourseData] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   // Modals & User State
   const [showShareModal, setShowShareModal] = useState(false);
@@ -70,7 +73,7 @@ export default function DynamicCourseDetail() {
     ? `https://www.youtube-nocookie.com/embed/${previewItem.videoId}?autoplay=1&rel=0&modestbranding=1&controls=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1&playlist=${previewItem.videoId}`
     : null;
 
-  const checkUserAccess = () => {
+  const checkUserAccess = async () => {
     if (typeof window !== 'undefined') {
       const email = window.localStorage.getItem('currentUserEmail');
       const isAdmin = window.localStorage.getItem('parhloAdmin') === 'true';
@@ -82,10 +85,16 @@ export default function DynamicCourseDetail() {
       }
 
       if (email && slug) {
-        const payments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
-        const userPayment = payments.find(p => p.userEmail === email && p.courseSlug === slug);
-        if (userPayment) {
-          setPaymentStatus(userPayment.status);
+        // Fetch purchase status from Supabase
+        const { data: purchase, error } = await supabase
+          .from('purchases')
+          .select('status')
+          .eq('student_email', email)
+          .eq('course_slug', slug)
+          .single();
+
+        if (!error && purchase) {
+          setPaymentStatus(purchase.status);
         } else {
           setPaymentStatus(null);
         }
@@ -104,47 +113,53 @@ export default function DynamicCourseDetail() {
   useEffect(() => {
     if (!slug) return;
 
-    const stored = typeof window !== 'undefined'
-      ? JSON.parse(window.localStorage.getItem('adminCourses') || '[]')
-      : [];
+    const fetchCourseDetail = async () => {
+      setLoading(true);
+      const { data: adminCourse, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('slug', slug)
+        .single();
 
-    const adminCourse = stored.find((course) => course.slug === slug);
+      if (error || !adminCourse) {
+        console.error('Error fetching course detail:', error);
+        setCourseData(null);
+      } else {
+        const originalPrice = parsePriceValue(adminCourse.price);
+        const discountPercent = parseFloat(String(adminCourse.discount || '').replace(/[^0-9.]/g, '')) || 0;
+        const salePriceValue = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
+        const savings = discountPercent > 0 ? originalPrice - salePriceValue : 0;
 
-    if (adminCourse) {
-      const originalPrice = parsePriceValue(adminCourse.price);
-      const discountPercent = parseFloat(String(adminCourse.discount || '').replace(/[^0-9.]/g, '')) || 0;
-      const salePriceValue = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
-      const savings = discountPercent > 0 ? originalPrice - salePriceValue : 0;
+        setCourseData({
+          title: adminCourse.name || 'New Course',
+          slug: adminCourse.slug,
+          category: adminCourse.category || 'New Course',
+          price: adminCourse.price || '0',
+          originalPrice: formatCurrency(originalPrice),
+          salePrice: formatCurrency(salePriceValue),
+          discount: discountPercent > 0 ? discountPercent : 0,
+          savings: savings > 0 ? formatCurrency(savings) : null,
+          instructor: adminCourse.instructor || 'Admin Instructor',
+          instructorIntro: adminCourse.instructorIntro || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
+          level: adminCourse.level || 'All Levels',
+          duration: `${adminCourse.lectures?.length || 0} Lectures`,
+          description: adminCourse.description || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
+          curriculum: adminCourse.lectures?.map((lecture, idx) => ({
+            id: idx + 1,
+            title: lecture.title || `Lecture ${idx + 1}`,
+            duration: '25 min',
+            isFree: lecture.type === 'demo',
+            videoId: lecture.videoId || '',
+            sub: lecture.type === 'demo'
+              ? 'Free demo preview available for every student.'
+              : 'Paid lecture content available after approval.',
+          })) || []
+        });
+      }
+      setLoading(false);
+    };
 
-      setCourseData({
-        title: adminCourse.name || 'New Course',
-        slug: adminCourse.slug,
-        category: adminCourse.category || 'New Course',
-        price: adminCourse.price || '0',
-        originalPrice: formatCurrency(originalPrice),
-        salePrice: formatCurrency(salePriceValue),
-        discount: discountPercent > 0 ? discountPercent : 0,
-        savings: savings > 0 ? formatCurrency(savings) : null,
-        instructor: adminCourse.instructor || 'Admin Instructor',
-        instructorIntro: adminCourse.instructorIntro || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
-        level: adminCourse.level || 'All Levels',
-        duration: `${adminCourse.lectures?.length || 0} Lectures`,
-        description: adminCourse.description || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
-        curriculum: adminCourse.lectures?.map((lecture, idx) => ({
-          id: idx + 1,
-          title: lecture.title || `Lecture ${idx + 1}`,
-          duration: '25 min',
-          isFree: lecture.type === 'demo',
-          videoId: lecture.videoId || '',
-          sub: lecture.type === 'demo'
-            ? 'Free demo preview available for every student.'
-            : 'Paid lecture content available after approval.',
-        })) || []
-      });
-      return;
-    }
-
-    setCourseData(null);
+    fetchCourseDetail();
   }, [slug]);
 
   // Security measures to deter simple URL extraction
@@ -189,7 +204,7 @@ export default function DynamicCourseDetail() {
     }
   };
 
-  const submitPayment = () => {
+  const submitPayment = async () => {
     if (!transactionId) {
       alert("Please enter a Transaction ID");
       return;
@@ -199,25 +214,33 @@ export default function DynamicCourseDetail() {
       return;
     }
 
-    const newPayment = {
-      id: Date.now().toString(),
-      userEmail: userEmail,
-      courseSlug: courseData.slug,
-      courseName: courseData.title,
-      transactionId: transactionId,
-      receiptImage: receiptImage,
-      status: 'pending',
-      date: new Date().toLocaleDateString()
-    };
+    setLoading(true);
 
-    if (typeof window !== 'undefined') {
-      const payments = JSON.parse(window.localStorage.getItem('parhloPayments') || '[]');
-      window.localStorage.setItem('parhloPayments', JSON.stringify([...payments, newPayment]));
+    try {
+      // Insert into Supabase 'purchases' table
+      const { error } = await supabase
+        .from('purchases')
+        .insert([
+          {
+            student_email: userEmail,
+            course_slug: courseData.slug,
+            status: 'pending',
+            payment_screenshot_url: receiptImage, // Note: In production, upload to Supabase Storage instead of Base64
+            // metadata: { courseName: courseData.title, transactionId: transactionId } // Optional extra info
+          }
+        ]);
+
+      if (error) throw error;
+
+      setPaymentStatus('pending');
+      setShowPaymentModal(false);
+      alert("Payment submitted! An admin will review and approve your access shortly.");
+    } catch (err) {
+      console.error('Error submitting payment:', err);
+      alert('Failed to submit payment. Make sure the purchases table has a course_slug column.');
+    } finally {
+      setLoading(false);
     }
-
-    setPaymentStatus('pending');
-    setShowPaymentModal(false);
-    alert("Payment submitted! An admin will review and approve your access shortly.");
   };
 
   const openPreview = (index) => {

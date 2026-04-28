@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronDown, PlayCircle, Plus, X } from 'lucide-react';
+import { supabase } from '@/utils/supabase';
 
 const extractYouTubeId = (value) => {
   try {
@@ -28,6 +29,7 @@ export default function AdminAddCoursePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const [levelDropdownOpen, setLevelDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function AdminAddCoursePage() {
       return;
     }
     setIsAdmin(true);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -82,26 +84,37 @@ export default function AdminAddCoursePage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-    const categorySet = new Set();
-    const instructorSet = new Set();
-    const introMap = {};
-
-    stored.forEach((course) => {
-      const category = String(course.category || '').trim();
-      const instructor = String(course.instructor || '').trim();
-      const intro = String(course.instructorIntro || '').trim();
-      if (category) categorySet.add(category);
-      if (instructor) instructorSet.add(instructor);
-      if (instructor && intro && !introMap[instructor.toLowerCase()]) {
-        introMap[instructor.toLowerCase()] = intro;
+    const fetchMetadata = async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching metadata:', error);
+        return;
       }
-    });
 
-    setCategories(Array.from(categorySet));
-    setInstructors(Array.from(instructorSet));
-    setInstructorIntroMap(introMap);
+      const categorySet = new Set();
+      const instructorSet = new Set();
+      const introMap = {};
+
+      data.forEach((course) => {
+        const category = String(course.category || '').trim();
+        const instructor = String(course.instructor || '').trim();
+        const intro = String(course.instructorIntro || '').trim();
+        if (category) categorySet.add(category);
+        if (instructor) instructorSet.add(instructor);
+        if (instructor && intro && !introMap[instructor.toLowerCase()]) {
+          introMap[instructor.toLowerCase()] = intro;
+        }
+      });
+
+      setCategories(Array.from(categorySet));
+      setInstructors(Array.from(instructorSet));
+      setInstructorIntroMap(introMap);
+    };
+
+    fetchMetadata();
   }, []);
 
   useEffect(() => {
@@ -192,32 +205,57 @@ export default function AdminAddCoursePage() {
     return true;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validateForm()) return;
 
-    if (typeof window !== 'undefined') {
-      const stored = JSON.parse(window.localStorage.getItem('adminCourses') || '[]');
-      const slugExists = stored.some((course) => course.slug === form.slug);
-      if (slugExists) {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Check if slug exists in Supabase
+      const { data: existing, error: fetchError } = await supabase
+        .from('courses')
+        .select('slug')
+        .eq('slug', form.slug)
+        .single();
+
+      if (existing) {
         setError('This course already exists. Change the course name so the slug is unique.');
+        setLoading(false);
         return;
       }
-      window.localStorage.setItem('adminCourses', JSON.stringify([...stored, form]));
-      if (form.category && !categories.some((cat) => cat.toLowerCase() === form.category.trim().toLowerCase())) {
-        setCategories((prev) => [...prev, form.category.trim()]);
+
+      // Insert into Supabase
+      const { error: insertError } = await supabase
+        .from('courses')
+        .insert([
+          {
+            name: form.name,
+            slug: form.slug,
+            description: form.description,
+            level: form.level,
+            category: form.category,
+            instructor: form.instructor,
+            instructorIntro: form.instructorIntro,
+            price: form.price,
+            discount: form.discount,
+            lectures: form.lectures
+          }
+        ]);
+
+      if (insertError) {
+        throw insertError;
       }
-      if (form.instructor && !instructors.some((inst) => inst.toLowerCase() === form.instructor.trim().toLowerCase())) {
-        setInstructors((prev) => [...prev, form.instructor.trim()]);
-      }
-      if (form.instructor && form.instructorIntro) {
-        setInstructorIntroMap((prev) => ({
-          ...prev,
-          [form.instructor.trim().toLowerCase()]: form.instructorIntro.trim(),
-        }));
-      }
+
+      setSuccess('Course saved successfully!');
       router.push('/admin');
-      return;
+    } catch (err) {
+      console.error('Error saving course:', err);
+      setError('Failed to save course. Please make sure the "courses" table exists in your Supabase database.');
+    } finally {
+      setLoading(false);
     }
   };
 
