@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronDown, PlayCircle, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, PlayCircle, Plus, X, Upload, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
+import { fetchYoutubeVideoDuration } from './actions';
 
 const extractYouTubeId = (value) => {
   try {
@@ -36,6 +37,7 @@ export default function AdminAddCoursePage() {
   const [categories, setCategories] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [instructorIntroMap, setInstructorIntroMap] = useState({});
+  const [instructorImageMap, setInstructorImageMap] = useState({});
   const levelWrapperRef = useRef(null);
   const categoryWrapperRef = useRef(null);
   const instructorWrapperRef = useRef(null);
@@ -48,6 +50,8 @@ export default function AdminAddCoursePage() {
     category: '',
     instructor: '',
     instructorIntro: '',
+    instructorImage: '',
+    thumbnail: '',
     price: '',
     discount: '',
     lectures: [
@@ -97,21 +101,27 @@ export default function AdminAddCoursePage() {
       const categorySet = new Set();
       const instructorSet = new Set();
       const introMap = {};
+      const imageMap = {};
 
       data.forEach((course) => {
         const category = String(course.category || '').trim();
         const instructor = String(course.instructor || '').trim();
         const intro = String(course.instructorIntro || '').trim();
+        const image = String(course.instructorImage || '').trim();
         if (category) categorySet.add(category);
         if (instructor) instructorSet.add(instructor);
         if (instructor && intro && !introMap[instructor.toLowerCase()]) {
           introMap[instructor.toLowerCase()] = intro;
+        }
+        if (instructor && image && !imageMap[instructor.toLowerCase()]) {
+          imageMap[instructor.toLowerCase()] = image;
         }
       });
 
       setCategories(Array.from(categorySet));
       setInstructors(Array.from(instructorSet));
       setInstructorIntroMap(introMap);
+      setInstructorImageMap(imageMap);
     };
 
     fetchMetadata();
@@ -119,10 +129,15 @@ export default function AdminAddCoursePage() {
 
   useEffect(() => {
     const key = String(form.instructor || '').trim().toLowerCase();
-    if (key && instructorIntroMap[key]) {
-      setForm((prev) => ({ ...prev, instructorIntro: instructorIntroMap[key] }));
+    if (key) {
+      if (instructorIntroMap[key]) {
+        setForm((prev) => ({ ...prev, instructorIntro: instructorIntroMap[key] }));
+      }
+      if (instructorImageMap[key]) {
+        setForm((prev) => ({ ...prev, instructorImage: instructorImageMap[key] }));
+      }
     }
-  }, [form.instructor, instructorIntroMap]);
+  }, [form.instructor, instructorIntroMap, instructorImageMap]);
 
   const slugFromName = useMemo(() => {
     return form.name
@@ -145,6 +160,56 @@ export default function AdminAddCoursePage() {
     setCategoryDropdownOpen(true);
   };
 
+  const compressImage = (file, callback) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_size = 800; // Max dimension 800px
+
+        if (width > height && width > max_size) {
+          height = Math.round((height * max_size) / width);
+          width = max_size;
+        } else if (height > max_size) {
+          width = Math.round((width * max_size) / height);
+          height = max_size;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Export as highly compressed WebP format (0.7 quality)
+        const compressedBase64 = canvas.toDataURL('image/webp', 0.7);
+        callback(compressedBase64);
+      };
+    };
+  };
+
+  const handleThumbnailUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      compressImage(file, (compressedBase64) => {
+        updateField('thumbnail', compressedBase64);
+      });
+    }
+  };
+
+  const handleInstructorImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      compressImage(file, (compressedBase64) => {
+        updateField('instructorImage', compressedBase64);
+      });
+    }
+  };
+
   const handleInstructorInput = (value) => {
     updateField('instructor', value);
     setInstructorDropdownOpen(true);
@@ -165,11 +230,29 @@ export default function AdminAddCoursePage() {
     setForm((prev) => {
       const lectures = [...prev.lectures];
       lectures[index] = { ...lectures[index], [field]: value };
-      if (field === 'url') {
+      if (field === 'url' && lectures[index].type !== 'quiz') {
         lectures[index].videoId = extractYouTubeId(value);
       }
       return { ...prev, lectures };
     });
+  };
+
+  const handleUrlChange = async (index, value, type) => {
+    updateLecture(index, 'url', value);
+    if (type !== 'quiz') {
+      const videoId = extractYouTubeId(value);
+      if (videoId) {
+        updateLecture(index, 'duration', 'Loading...');
+        const duration = await fetchYoutubeVideoDuration(videoId);
+        if (duration) {
+          updateLecture(index, 'duration', duration);
+        } else {
+          updateLecture(index, 'duration', 'Unknown');
+        }
+      } else {
+        updateLecture(index, 'duration', '');
+      }
+    }
   };
 
   const addLecture = () => {
@@ -181,7 +264,24 @@ export default function AdminAddCoursePage() {
           title: `Lecture ${prev.lectures.length + 1}`,
           url: '',
           videoId: '',
+          duration: '15 min',
           type: 'lecture'
+        }
+      ]
+    }));
+  };
+
+  const addQuiz = () => {
+    setForm((prev) => ({
+      ...prev,
+      lectures: [
+        ...prev.lectures,
+        {
+          title: `Quiz ${prev.lectures.length + 1}`,
+          url: '',
+          videoId: '',
+          duration: 'Quiz',
+          type: 'quiz'
         }
       ]
     }));
@@ -196,9 +296,9 @@ export default function AdminAddCoursePage() {
       setError('Please add at least one demo and one lecture.');
       return false;
     }
-    const brokenLecture = form.lectures.find((lecture) => !lecture.title || !lecture.url || !lecture.videoId);
+    const brokenLecture = form.lectures.find((lecture) => !lecture.title || !lecture.url || (lecture.type !== 'quiz' && !lecture.videoId));
     if (brokenLecture) {
-      setError('Please enter a valid YouTube URL for every lecture.');
+      setError('Please enter a valid URL for every lecture and quiz.');
       return false;
     }
     setError('');
@@ -239,6 +339,8 @@ export default function AdminAddCoursePage() {
             category: form.category,
             instructor: form.instructor,
             instructorIntro: form.instructorIntro,
+            instructorImage: form.instructorImage,
+            thumbnail: form.thumbnail,
             price: form.price,
             discount: form.discount,
             lectures: form.lectures
@@ -246,14 +348,17 @@ export default function AdminAddCoursePage() {
         ]);
 
       if (insertError) {
-        throw insertError;
+        const errStr = typeof insertError === 'object' ? JSON.stringify(insertError) : String(insertError);
+        setError(`Failed to save course. Database Error: ${insertError.message || insertError.details || errStr}`);
+        setLoading(false);
+        return;
       }
 
       setSuccess('Course saved successfully!');
       router.push('/admin');
     } catch (err) {
-      console.error('Error saving course:', err);
-      setError('Failed to save course. Please make sure the "courses" table exists in your Supabase database.');
+      const errString = typeof err === 'object' ? (err.message ? err.message : JSON.stringify(err)) : String(err);
+      setError(`Failed to save course. Unexpected error: ${errString}`);
     } finally {
       setLoading(false);
     }
@@ -294,6 +399,30 @@ export default function AdminAddCoursePage() {
                   readOnly
                   className="mt-3 w-full rounded-3xl border border-gray-200 bg-gray-100 px-5 py-4 text-gray-500"
                 />
+              </label>
+              <label className="block">
+                <span className="text-sm font-bold text-gray-700">Course Thumbnail</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleThumbnailUpload} 
+                  className="hidden" 
+                  id="thumbnail-upload"
+                />
+                <label 
+                  htmlFor="thumbnail-upload"
+                  className={`mt-3 flex items-center justify-center w-full rounded-3xl border-2 border-dashed p-4 cursor-pointer transition-colors overflow-hidden ${form.thumbnail ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400 bg-white'}`}
+                >
+                  {form.thumbnail ? (
+                    <div className="flex flex-col items-center">
+                      <CheckCircle2 size={24} className="text-green-600 mb-2"/>
+                      <span className="text-green-600 font-bold text-sm">Image Uploaded</span>
+                      <img src={form.thumbnail} alt="Preview" className="mt-4 h-24 object-cover rounded-lg border border-green-200" />
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-sm font-medium flex flex-col items-center gap-2"><Upload size={20} className="text-gray-400"/> Click to browse & upload</span>
+                  )}
+                </label>
               </label>
               <label className="block lg:col-span-2">
                 <span className="text-sm font-bold text-gray-700">Course Description</span>
@@ -409,6 +538,30 @@ export default function AdminAddCoursePage() {
                   <p className="mt-2 text-sm text-green-700">Adding new instructor</p>
                 )}
               </label>
+              <label className="block">
+                <span className="text-sm font-bold text-gray-700">Instructor Image</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleInstructorImageUpload} 
+                  className="hidden" 
+                  id="instructor-image-upload"
+                />
+                <label 
+                  htmlFor="instructor-image-upload"
+                  className={`mt-3 flex items-center justify-center w-full rounded-3xl border-2 border-dashed p-4 cursor-pointer transition-colors overflow-hidden ${form.instructorImage ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400 bg-white'}`}
+                >
+                  {form.instructorImage ? (
+                    <div className="flex flex-col items-center">
+                      <CheckCircle2 size={24} className="text-green-600 mb-2"/>
+                      <span className="text-green-600 font-bold text-sm">Image Selected</span>
+                      <img src={form.instructorImage} alt="Preview" className="mt-4 h-24 object-cover rounded-lg border border-green-200" />
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-sm font-medium flex flex-col items-center gap-2"><Upload size={20} className="text-gray-400"/> Click to browse & upload</span>
+                  )}
+                </label>
+              </label>
               <label className="block lg:col-span-2">
                 <span className="text-sm font-bold text-gray-700">Instructor Intro</span>
                 <textarea
@@ -442,16 +595,25 @@ export default function AdminAddCoursePage() {
             <div className="rounded-[2rem] border border-gray-200 bg-gray-50 p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900">Videos</h2>
-                  <p className="text-gray-500 text-sm">Add one demo lecture plus at least one paid lecture. Student sees demo before payment.</p>
+                  <h2 className="text-2xl font-black text-slate-900">Content</h2>
+                  <p className="text-gray-500 text-sm">Add one demo lecture plus at least one paid lecture. You can also add quizzes (Google Form links).</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={addLecture}
-                  className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-3 text-white font-bold hover:bg-green-700 transition-all"
-                >
-                  <Plus size={16} /> Add Lecture
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={addLecture}
+                    className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-3 text-white font-bold hover:bg-green-700 transition-all"
+                  >
+                    <Plus size={16} /> Add Lecture
+                  </button>
+                  <button
+                    type="button"
+                    onClick={addQuiz}
+                    className="inline-flex items-center gap-2 rounded-full border border-green-600 text-green-600 px-5 py-3 font-bold hover:bg-green-50 transition-all"
+                  >
+                    <Plus size={16} /> Add Quiz
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -467,17 +629,28 @@ export default function AdminAddCoursePage() {
                       />
                     </div>
                     <div className="md:col-span-6">
-                      <label className="block text-sm font-bold text-gray-700">YouTube URL</label>
+                      <label className="block text-sm font-bold text-gray-700">
+                        {lecture.type === 'quiz' ? 'Google Form URL' : 'YouTube URL'}
+                      </label>
                       <input
                         value={lecture.url}
-                        onChange={(e) => updateLecture(index, 'url', e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=..."
+                        onChange={(e) => handleUrlChange(index, e.target.value, lecture.type)}
+                        placeholder={lecture.type === 'quiz' ? "https://forms.gle/..." : "https://www.youtube.com/watch?v=..."}
                         className="mt-3 w-full rounded-3xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
                       />
                     </div>
                     <div className="md:col-span-2 text-right">
-                      <div className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">{lecture.type === 'demo' ? 'Demo' : 'Paid'}</div>
-                      <div className="mt-3 text-sm text-gray-500">{lecture.videoId ? 'Valid video' : 'Invalid URL'}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+                        {lecture.type === 'demo' ? 'Demo' : lecture.type === 'quiz' ? 'Quiz' : 'Paid'}
+                      </div>
+                      <div className="mt-3 text-sm text-gray-500 flex flex-col items-end gap-1">
+                        <span>{lecture.type === 'quiz' ? (lecture.url ? 'Valid link' : 'Invalid URL') : (lecture.videoId ? 'Valid video' : 'Invalid URL')}</span>
+                        {lecture.type !== 'quiz' && lecture.duration && (
+                          <span className={`text-xs font-bold px-2 py-1 rounded-md ${lecture.duration === 'Loading...' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                            {lecture.duration}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -506,16 +679,28 @@ export default function AdminAddCoursePage() {
                   <div className="flex items-center justify-between gap-4 mb-3">
                     <div>
                       <p className="text-sm font-bold text-slate-900">{lecture.title || `Lecture ${idx + 1}`}</p>
-                      <p className="text-xs uppercase tracking-[0.2em] text-gray-400">{lecture.type === 'demo' ? 'Demo playable before payment' : 'Paid lecture'}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-gray-400">{lecture.type === 'demo' ? 'Demo playable before payment' : lecture.type === 'quiz' ? 'Quiz link' : 'Paid lecture'}</p>
                     </div>
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">{lecture.type === 'demo' ? 'Demo' : 'Paid'}</span>
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">{lecture.type === 'demo' ? 'Demo' : lecture.type === 'quiz' ? 'Quiz' : 'Paid'}</span>
                   </div>
                   <div className="rounded-3xl border border-gray-200 bg-white p-4">
                     <div className="mb-3 flex items-center gap-2 text-sm text-gray-500">
-                      <PlayCircle size={16} /> Secure player preview
+                      <PlayCircle size={16} /> {lecture.type === 'quiz' ? 'Quiz Link Preview' : 'Secure player preview'}
                     </div>
                     <div className="h-48 rounded-3xl bg-black/5 overflow-hidden">
-                    {lecture.videoId ? (
+                    {lecture.type === 'quiz' ? (
+                      lecture.url ? (
+                        <div className="flex flex-col h-full items-center justify-center bg-green-50 text-green-700 p-4 text-center">
+                          <ClipboardList size={40} className="mb-3 text-green-600" />
+                          <span className="font-bold text-lg">Quiz Created</span>
+                          <span className="text-xs text-green-600 mt-1 uppercase tracking-widest">Ready for students</span>
+                        </div>
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-gray-500 text-sm">
+                          Enter a valid Google Form URL
+                        </div>
+                      )
+                    ) : lecture.videoId ? (
                       <img
                         src={`https://img.youtube.com/vi/${lecture.videoId}/hqdefault.jpg`}
                         alt="YouTube thumbnail preview"

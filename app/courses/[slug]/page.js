@@ -140,6 +140,7 @@ export default function DynamicCourseDetail() {
           discount: discountPercent > 0 ? discountPercent : 0,
           savings: savings > 0 ? formatCurrency(savings) : null,
           instructor: adminCourse.instructor || 'Admin Instructor',
+          instructorImage: adminCourse.instructorImage,
           instructorIntro: adminCourse.instructorIntro || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
           level: adminCourse.level || 'All Levels',
           duration: `${adminCourse.lectures?.length || 0} Lectures`,
@@ -147,12 +148,16 @@ export default function DynamicCourseDetail() {
           curriculum: adminCourse.lectures?.map((lecture, idx) => ({
             id: idx + 1,
             title: lecture.title || `Lecture ${idx + 1}`,
-            duration: '25 min',
+            duration: lecture.duration || (lecture.type === 'quiz' ? 'Quiz' : '25 min'),
             isFree: lecture.type === 'demo',
             videoId: lecture.videoId || '',
-            sub: lecture.type === 'demo'
-              ? 'Free demo preview available for every student.'
-              : 'Paid lecture content available after approval.',
+            url: lecture.url || '',
+            type: lecture.type || 'lecture',
+            sub: lecture.type === 'quiz' 
+              ? 'Complete this quiz to test your knowledge.'
+              : lecture.type === 'demo'
+                ? 'Free demo preview available for every student.'
+                : 'Paid lecture content available after approval.',
           })) || []
         });
       }
@@ -237,7 +242,8 @@ export default function DynamicCourseDetail() {
       alert("Payment submitted! An admin will review and approve your access shortly.");
     } catch (err) {
       console.error('Error submitting payment:', err);
-      alert('Failed to submit payment. Make sure the purchases table has a course_slug column.');
+      const errMsg = typeof err === 'object' ? (err.message || err.details || JSON.stringify(err)) : String(err);
+      alert(`Failed to submit payment. Database Error: ${errMsg}. Please check your purchases table schema or RLS policies.`);
     } finally {
       setLoading(false);
     }
@@ -271,6 +277,14 @@ export default function DynamicCourseDetail() {
       return () => clearInterval(interval);
     }
   }, [showPreviewOverlay]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   if (!courseData) {
     return (
@@ -308,14 +322,9 @@ export default function DynamicCourseDetail() {
             
             <div className="space-y-4 mb-8">
               <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                <p className="text-[10px] text-green-600 font-black uppercase tracking-widest mb-1">EasyPaisa / JazzCash</p>
-                <p className="text-lg font-mono text-gray-900 font-bold tracking-tight">0300-1234567</p>
-                <p className="text-xs text-gray-400 mt-1">Title: Syed Saad</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest mb-1">Bank Transfer (Meezan)</p>
-                <p className="text-lg font-mono text-gray-900 font-bold tracking-tight">0123-4567891234</p>
-                <p className="text-xs text-gray-400 mt-1">Title: Parhlo Pakistan SMC</p>
+                <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest mb-1">Bank Transfer (Bank Alfalah)</p>
+                <p className="text-lg font-mono text-gray-900 font-bold tracking-tight">55295001809451</p>
+                <p className="text-xs text-gray-400 mt-1">Title: Muhammad Faraz Sohail</p>
               </div>
             </div>
 
@@ -467,8 +476,8 @@ export default function DynamicCourseDetail() {
       <section className="max-w-6xl mx-auto px-8 py-24">
         <div className="lg:w-2/3">
           <div className="flex gap-8 border-b border-gray-100 mb-12">
-            <button className="pb-4 border-b-4 border-green-600 text-lg font-black tracking-tight">
-              Course Content <span className="ml-2 text-sm text-gray-300 font-medium px-2 py-0.5 bg-gray-50 rounded-lg">{courseData.curriculum.length} Lectures</span>
+            <button className="pb-4 border-b-4 border-green-600 text-lg font-black tracking-tight flex items-center">
+              Course Content <span className="ml-2 text-sm text-slate-600 font-bold px-2 py-0.5 bg-slate-100 rounded-lg">{courseData.curriculum.length} Lectures</span>
             </button>
           </div>
 
@@ -507,11 +516,20 @@ export default function DynamicCourseDetail() {
 
                   <button
                     type="button"
-                    onClick={() => item.videoId ? openPreview(idx) : null}
-                    disabled={!item.videoId}
-                    className={`bg-white border px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm transition-colors ${hasAccess ? 'border-green-200 hover:border-green-600' : 'border-gray-200'} ${!item.videoId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => {
+                      if (item.type === 'quiz' && item.url) {
+                        window.open(item.url, '_blank');
+                      } else if (item.videoId) {
+                        openPreview(idx);
+                      }
+                    }}
+                    disabled={(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url)}
+                    className={`bg-white border px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm transition-colors ${hasAccess ? 'border-green-200 hover:border-green-600' : 'border-gray-200'} ${(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {!item.videoId ? 'Unavailable' : hasAccess ? 'Play Video' : 'Enroll to Unlock'}
+                    {item.type === 'quiz' 
+                      ? (!item.url ? 'Unavailable' : hasAccess ? 'Take Quiz' : 'Enroll to Unlock')
+                      : (!item.videoId ? 'Unavailable' : hasAccess ? 'Play Video' : 'Enroll to Unlock')
+                    }
                   </button>
                 </div>
               );
@@ -520,7 +538,11 @@ export default function DynamicCourseDetail() {
 
           <div className="mt-20 p-10 bg-gray-50 rounded-[3rem] flex flex-col md:flex-row gap-10 items-center border border-gray-100">
             <div className="w-32 h-32 bg-gray-200 rounded-full shrink-0 overflow-hidden border-4 border-white shadow-lg">
-              <div className="w-full h-full flex items-center justify-center text-gray-400"><User size={40} /></div>
+              {courseData.instructorImage ? (
+                <img src={courseData.instructorImage} alt={courseData.instructor} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400"><User size={40} /></div>
+              )}
             </div>
             <div>
               <p className="text-[10px] uppercase font-black text-green-600 tracking-[0.2em] mb-2">Taught by</p>
@@ -552,10 +574,15 @@ export default function DynamicCourseDetail() {
                   {userEmail}
                 </div>
               )}
+              {/* Invisible blockers to prevent hovering/clicking YouTube's native links */}
+              <div className="absolute top-0 left-0 w-full h-[70px] z-20" /> {/* Blocks Title and Share/Copy Link */}
+              <div className="absolute bottom-0 right-0 w-[150px] h-[60px] z-20" /> {/* Blocks YouTube Logo */}
+              <div className="absolute bottom-0 left-0 w-[150px] h-[60px] z-20" /> {/* Blocks Watch on YouTube button if it appears */}
+              
               <iframe
                 src={previewUrl}
                 title="Course preview"
-                className="h-full w-full"
+                className="h-full w-full relative z-0"
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 sandbox="allow-scripts allow-same-origin allow-presentation"

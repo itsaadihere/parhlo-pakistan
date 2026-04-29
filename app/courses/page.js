@@ -30,6 +30,7 @@ export default function AllCourses() {
   };
 
   const [courses, setCourses] = useState([]);
+  const [coursesError, setCoursesError] = useState(null);
 
   const parseStudentCount = (value) => {
     if (value === undefined || value === null) return 0;
@@ -69,13 +70,15 @@ export default function AllCourses() {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select('name, price, students, rating, tag, slug, category, thumbnail, instructorImage')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching courses:', error);
+      setCoursesError(error.message || JSON.stringify(error));
       setCourses([]);
     } else if (data) {
+      setCoursesError(null);
       const persistedCourses = data.map((course) => ({
         title: course.name,
         price: course.price || '0',
@@ -83,6 +86,8 @@ export default function AllCourses() {
         rating: course.rating || '5.0',
         tag: course.tag || 'New',
         slug: course.slug,
+        thumbnail: course.thumbnail,
+        instructorImage: course.instructorImage,
         imageClass: 'from-slate-900 via-slate-700 to-green-600',
         description: course.category ? `${course.category} course` : 'New course content available now.',
       }));
@@ -133,14 +138,35 @@ export default function AllCourses() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20">
-          {courses.length > 0 ? courses.map((course, i) => {
+          {coursesError ? (
+            <div className="col-span-full rounded-[3rem] border border-red-200 bg-red-50 p-16 text-center text-red-500">
+              Error fetching courses: {coursesError}
+            </div>
+          ) : loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden animate-pulse">
+                <div className="h-56 bg-gray-200"></div>
+                <div className="p-10 pt-6">
+                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                  <div className="h-8 bg-gray-200 rounded w-3/4 mb-6"></div>
+                  <div className="flex justify-between items-center pt-6 border-t border-gray-50">
+                    <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-10 bg-gray-200 rounded-2xl w-1/3"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : courses.length > 0 ? courses.map((course, i) => {
             const meta = [];
             if (shouldShowRating(course.rating)) meta.push(course.rating);
             if (shouldShowStudents(course.students)) meta.push(`${course.students} Students`);
             return (
               <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
                 <div className={`h-56 overflow-hidden relative bg-gradient-to-br ${course.imageClass}`}>
-                  <div className="absolute inset-0 bg-black/10" />
+                  {course.thumbnail && (
+                    <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                  )}
+                  <div className="absolute inset-0 bg-black/30" />
                   <div className="absolute top-6 left-6 z-10">
                     <span className="bg-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm">{course.tag}</span>
                   </div>
@@ -148,7 +174,12 @@ export default function AllCourses() {
                     <h3 className="text-2xl font-black text-white leading-tight">{course.title}</h3>
                   </div>
                 </div>
-                <div className="p-10 pt-6">
+                <div className="p-10 pt-6 relative">
+                  {course.instructorImage && (
+                    <div className="absolute -top-6 right-8 w-12 h-12 rounded-full border-4 border-white shadow-md overflow-hidden bg-white z-20">
+                      <img src={course.instructorImage} alt="Instructor" className="w-full h-full object-cover" />
+                    </div>
+                  )}
                   {meta.length > 0 && (
                     <div className="flex items-center gap-2 mb-4">
                       <Star size={16} className="text-yellow-400" fill="currentColor" />

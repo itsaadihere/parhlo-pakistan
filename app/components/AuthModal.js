@@ -9,25 +9,68 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
 
   if (!isOpen) return null;
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     const email = e.target.email.value;
     const password = e.target.password.value;
+    const fullName = authMode === 'signup' ? e.target.fullName.value : null;
 
-    // Admin Credentials Check
-    if (email === "parhlo.pakistan.edu@gmail.com" && password === "parhlo@2003") {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('parhloAdmin', 'true');
-        window.localStorage.setItem('currentUserEmail', email);
-      }
-      onLoginSuccess && onLoginSuccess(true);
-    } else {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('parhloAdmin', 'false');
-        window.localStorage.setItem('currentUserEmail', email);
-      }
-      onLoginSuccess && onLoginSuccess(false);
+    // Destroy any lingering Google session so it doesn't override this manual login
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error(err);
     }
+
+    if (authMode === 'signup') {
+      const { data: existing } = await supabase.from('users').select('*').eq('email', email).single();
+      if (existing) {
+        alert("Account already exists. Please log in.");
+        return;
+      }
+      
+      const role = email === "parhlo.pakistan.edu@gmail.com" ? "admin" : "student";
+      
+      const { error } = await supabase.from('users').insert([{
+        email,
+        password,
+        full_name: fullName,
+        role
+      }]);
+      
+      if (error) {
+        alert("Error creating account. Ensure the 'users' table exists in Supabase.");
+        return;
+      }
+    } else {
+      const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+      
+      if (email === "parhlo.pakistan.edu@gmail.com" && (!user || error)) {
+        // Fallback for admin if table is missing or empty
+        const currentAdminPassword = window.localStorage.getItem('parhloAdminPassword') || "parhlo@2003";
+        if (password !== currentAdminPassword) {
+          alert("Incorrect password");
+          return;
+        }
+      } else {
+        if (error || !user) {
+          alert("Account not found. Please sign up.");
+          return;
+        }
+        if (user.password && user.password !== password) {
+          alert("Incorrect password");
+          return;
+        }
+      }
+    }
+
+    const isAdmin = email === "parhlo.pakistan.edu@gmail.com";
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('parhloAdmin', isAdmin ? 'true' : 'false');
+      window.localStorage.setItem('currentUserEmail', email);
+    }
+    
+    onLoginSuccess && onLoginSuccess(isAdmin);
     onClose();
   };
 
@@ -83,7 +126,7 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
           {authMode === 'signup' && (
             <div className="relative">
               <User className="absolute left-4 top-4 text-gray-400" size={20} />
-              <input type="text" placeholder="Full Name" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
+              <input name="fullName" type="text" required={authMode === 'signup'} placeholder="Full Name" className="w-full bg-gray-50 border border-gray-200 p-4 pl-12 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium" />
             </div>
           )}
           <div className="relative">

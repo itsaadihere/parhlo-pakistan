@@ -23,6 +23,11 @@ export default function StudentDashboard() {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [studentName, setStudentName] = useState('Student');
   const [userEmail, setUserEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -42,7 +47,14 @@ export default function StudentDashboard() {
         if (session && session.user && session.user.email) {
           email = session.user.email;
           window.localStorage.setItem('currentUserEmail', email);
-          window.localStorage.setItem('parhloAdmin', 'false');
+          
+          if (email === "parhlo.pakistan.edu@gmail.com") {
+            window.localStorage.setItem('parhloAdmin', 'true');
+            router.replace('/admin');
+            return;
+          } else {
+            window.localStorage.setItem('parhloAdmin', 'false');
+          }
         }
       } catch (err) {
         console.error(err);
@@ -55,6 +67,21 @@ export default function StudentDashboard() {
       
       setUserEmail(email);
       setStudentName(email.split('@')[0]);
+      
+      // Fetch user profile from users table
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+        
+      if (userProfile) {
+        setStudentName(userProfile.full_name || email.split('@')[0]);
+        setPhoneNumber(userProfile.phone || '');
+      } else if (!profileError || profileError.code === 'PGRST116') {
+        // User doesn't exist in users table (maybe Google login), let's create a stub
+        await supabase.from('users').insert([{ email, full_name: email.split('@')[0], role: 'student' }]);
+      }
 
       // Fetch all purchases for this user from Supabase
       const { data: userPurchases, error: purchasesError } = await supabase
@@ -107,7 +134,12 @@ export default function StudentDashboard() {
     initDashboard();
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('parhloAdmin');
       window.localStorage.removeItem('currentUserEmail');
@@ -327,9 +359,94 @@ export default function StudentDashboard() {
                 <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
                 <input type="email" value={userEmail} disabled className="w-full bg-gray-100 border border-gray-200 p-4 rounded-xl outline-none text-gray-400 font-medium cursor-not-allowed" />
               </div>
-              <button className="bg-gray-900 text-white px-8 py-4 rounded-full font-black text-sm hover:bg-green-600 transition-all mt-4">
-                Save Changes
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number (WhatsApp)</label>
+                <input 
+                  type="text" 
+                  value={phoneNumber} 
+                  onChange={(e) => setPhoneNumber(e.target.value)} 
+                  placeholder="Enter your WhatsApp number"
+                  className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 font-medium" 
+                />
+              </div>
+              <button 
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from('users')
+                    .update({ full_name: studentName, phone: phoneNumber })
+                    .eq('email', userEmail);
+                    
+                  if (error) {
+                    alert("Error updating profile. Ensure 'users' table exists.");
+                  } else {
+                    alert("Profile settings saved successfully!");
+                  }
+                }}
+                className="bg-gray-900 text-white px-8 py-4 rounded-full font-black text-sm hover:bg-green-600 transition-all mt-4 w-fit"
+              >
+                Save Profile Details
               </button>
+              <div className="pt-6 border-t border-gray-100">
+                <h4 className="text-lg font-bold text-gray-900 mb-6">Change Password</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">New Password</label>
+                    <input 
+                      type="password" 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 font-medium" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 font-medium" 
+                    />
+                  </div>
+
+                  {passwordMessage && (
+                    <div className={`p-4 rounded-xl text-sm font-medium ${passwordMessage.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {passwordMessage}
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={async () => {
+                      if (!newPassword) {
+                        setPasswordMessage("Password cannot be empty.");
+                        return;
+                      }
+                      if (newPassword !== confirmPassword) {
+                        setPasswordMessage("Passwords do not match.");
+                        return;
+                      }
+                      
+                      const { error } = await supabase
+                        .from('users')
+                        .update({ password: newPassword })
+                        .eq('email', userEmail);
+                        
+                      if (error) {
+                        setPasswordMessage("Error updating password.");
+                      } else {
+                        setPasswordMessage("Password successfully updated!");
+                        setNewPassword('');
+                        setConfirmPassword('');
+                        setTimeout(() => setPasswordMessage(''), 3000);
+                      }
+                    }}
+                    className="bg-gray-900 text-white px-8 py-4 rounded-xl font-black text-sm hover:bg-green-600 transition-all mt-4 w-full md:w-auto"
+                  >
+                    Update Password
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

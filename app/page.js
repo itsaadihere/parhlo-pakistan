@@ -51,7 +51,7 @@ export default function ParhloPakistan() {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select('name, slug, thumbnail, price, students, rating, tag')
       .limit(3)
       .order('created_at', { ascending: false });
 
@@ -63,6 +63,7 @@ export default function ParhloPakistan() {
       const mappedCourses = data.map(course => ({
         title: course.name,
         slug: course.slug,
+        thumbnail: course.thumbnail,
         price: course.price || '0',
         students: course.students || '0',
         rating: course.rating || '5.0',
@@ -179,11 +180,15 @@ export default function ParhloPakistan() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {featuredCourses.map((course, i) => (
             <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
-              <div className="h-56 bg-gradient-to-br from-slate-900 via-slate-700 to-green-600 flex items-center justify-center relative">
-                <div className="absolute top-6 left-6">
+              <div className="h-56 relative bg-gradient-to-br from-slate-900 via-slate-700 to-green-600 flex items-center justify-center overflow-hidden">
+                {course.thumbnail && (
+                  <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                )}
+                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute top-6 left-6 z-10">
                   <span className="bg-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm">{course.tag}</span>
                 </div>
-                <PlayCircle size={60} className="text-white opacity-40 group-hover:opacity-80 transition-all group-hover:scale-110" />
+                <PlayCircle size={60} className="text-white opacity-40 group-hover:opacity-80 transition-all group-hover:scale-110 z-10 relative" />
               </div>
               <div className="p-10">
                 <div className="flex items-center gap-2 mb-4">
