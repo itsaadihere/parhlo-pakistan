@@ -116,13 +116,50 @@ export default function StudentDashboard() {
           const activeCourses = approved.map(purchase => {
             const course = adminCourses.find(c => c.slug === purchase.course_slug);
             if (!course) return null;
+            
+            // Read watched time per lecture from localStorage
+            const key = `parhlo_watch_${email}_${course.slug}`;
+            let progressData = {};
+            try {
+              progressData = JSON.parse(window.localStorage.getItem(key) || '{}');
+              if (typeof progressData !== 'object' || progressData === null) progressData = {};
+            } catch (e) {
+              progressData = {};
+            }
+            
+            let watchedSeconds = 0;
+            let completedLectures = 0;
+            const totalLectures = course.lectures?.length || 1;
+
+            Object.keys(progressData).forEach(lecId => {
+               watchedSeconds += progressData[lecId];
+               if (progressData[lecId] >= 30) {
+                 completedLectures += 1;
+               }
+            });
+
+            completedLectures = Math.min(totalLectures, completedLectures);
+
+            let estimatedTotalSeconds = 0;
+            if (course.lectures && course.lectures.length > 0) {
+              course.lectures.forEach(l => {
+                let max = 900;
+                if (l.duration && l.duration.includes('min')) max = (parseInt(l.duration) || 15) * 60;
+                estimatedTotalSeconds += max;
+              });
+            } else {
+              estimatedTotalSeconds = totalLectures * 10 * 60;
+            }
+
+            const progressPct = Math.min(100, Math.floor((watchedSeconds / estimatedTotalSeconds) * 100));
+
             return {
               title: course.name,
               slug: course.slug,
               category: course.category || 'Course',
-              progress: 0,
-              totalLectures: course.lectures?.length || 0,
-              completedLectures: 0,
+              progress: progressPct,
+              totalLectures: totalLectures,
+              completedLectures: completedLectures,
               imageClass: 'from-slate-900 via-slate-700 to-green-600'
             };
           }).filter(Boolean);
@@ -149,8 +186,7 @@ export default function StudentDashboard() {
 
   const menuItems = [
     { name: 'Overview', icon: <BookOpen size={20} />, id: 'overview' },
-    { name: 'My Courses', icon: <PlayCircle size={20} />, id: 'courses' },
-    { name: 'Certificates', icon: <Award size={20} />, id: 'certificates' },
+    { name: 'My Subjects', icon: <PlayCircle size={20} />, id: 'courses' },
     { name: 'Settings', icon: <Settings size={20} />, id: 'settings' }
   ];
 
@@ -213,9 +249,8 @@ export default function StudentDashboard() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
               {[
-                { label: 'Active Courses', val: enrolledCourses.length, color: 'bg-blue-50 text-blue-600' },
+                { label: 'Active Subjects', val: enrolledCourses.length, color: 'bg-blue-50 text-blue-600' },
                 { label: 'Pending Approvals', val: pendingPayments.length, color: 'bg-amber-50 text-amber-600' },
-                { label: 'Certificates', val: '0', color: 'bg-green-50 text-green-600' },
                 { label: 'Study Hours', val: '0', color: 'bg-purple-50 text-purple-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm text-center md:text-left flex flex-col md:flex-row items-center gap-4">
@@ -253,8 +288,12 @@ export default function StudentDashboard() {
               <div className="mb-10">
                 <h2 className="text-xl font-black text-slate-900 mb-6">Continue Learning</h2>
                 <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 flex flex-col md:flex-row gap-8 items-center shadow-sm">
-                  <div className={`w-full md:w-64 h-40 rounded-3xl bg-gradient-to-br ${enrolledCourses[0].imageClass || 'from-slate-900 to-green-600'} flex items-center justify-center shrink-0`}>
-                    <PlayCircle size={48} className="text-white opacity-50" />
+                  <div className={`w-full md:w-64 h-40 rounded-3xl bg-gradient-to-br ${enrolledCourses[0].imageClass || 'from-slate-900 to-green-600'} flex items-center justify-center shrink-0 overflow-hidden relative`}>
+                    {enrolledCourses[0].thumbnail && (
+                      <img src={enrolledCourses[0].thumbnail} alt={enrolledCourses[0].title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                    <div className="absolute inset-0 bg-black/30" />
+                    <PlayCircle size={48} className="text-white opacity-50 relative z-10" />
                   </div>
                   <div className="flex-1 w-full">
                     <span className="text-[10px] uppercase font-black text-green-600 tracking-widest">{enrolledCourses[0].category}</span>
@@ -271,7 +310,7 @@ export default function StudentDashboard() {
                     <div className="flex items-center gap-4">
                       <Link href={`/courses/${enrolledCourses[0].slug}`}>
                         <button className="bg-gray-900 text-white px-8 py-3 rounded-full font-black text-sm hover:bg-green-600 transition-all">
-                          Resume Course
+                          Resume Subject
                         </button>
                       </Link>
                       <span className="text-xs font-bold text-gray-400 flex items-center gap-2">
@@ -288,16 +327,20 @@ export default function StudentDashboard() {
         {activeTab === 'courses' && (
           <>
             <header className="mb-10">
-              <h1 className="text-3xl font-black text-slate-900 mb-2">My Courses</h1>
-              <p className="text-gray-500 font-medium">All the courses you are currently enrolled in with full access.</p>
+              <h1 className="text-3xl font-black text-slate-900 mb-2">My Subjects</h1>
+              <p className="text-gray-500 font-medium">All the subjects you are currently enrolled in with full access.</p>
             </header>
 
             {enrolledCourses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {enrolledCourses.map((course, i) => (
                   <div key={i} className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                    <div className={`h-48 bg-gradient-to-br ${course.imageClass || 'from-slate-900 to-green-600'} flex items-center justify-center relative`}>
-                       <PlayCircle size={48} className="text-white opacity-40 group-hover:scale-110 transition-transform" />
+                    <div className={`h-48 bg-gradient-to-br ${course.imageClass || 'from-slate-900 to-green-600'} flex items-center justify-center relative overflow-hidden`}>
+                       {course.thumbnail && (
+                         <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                       )}
+                       <div className="absolute inset-0 bg-black/30" />
+                       <PlayCircle size={48} className="text-white opacity-40 group-hover:scale-110 transition-transform relative z-10" />
                     </div>
                     <div className="p-8">
                       <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest">{course.category}</span>
@@ -325,8 +368,8 @@ export default function StudentDashboard() {
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <BookOpen size={32} className="text-gray-300" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 mb-2">No courses yet</h3>
-                <p className="text-gray-500 mb-8 max-w-sm mx-auto">You don't have any approved courses. Browse our catalog to start your learning journey.</p>
+                <h3 className="text-xl font-black text-gray-900 mb-2">No subjects yet</h3>
+                <p className="text-gray-500 mb-8 max-w-sm mx-auto">You don't have any approved subjects. Browse our catalog to start your learning journey.</p>
                 <Link href="/courses">
                   <button className="bg-green-600 text-white px-8 py-4 rounded-full font-black text-sm hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">
                     Browse Catalog
@@ -335,16 +378,6 @@ export default function StudentDashboard() {
               </div>
             )}
           </>
-        )}
-
-        {activeTab === 'certificates' && (
-          <div className="bg-white rounded-[3rem] border border-gray-100 p-16 text-center shadow-sm">
-            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Award size={32} className="text-amber-500" />
-            </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2">Certificates</h3>
-            <p className="text-gray-500 max-w-md mx-auto">Complete a course to 100% to earn your professional certificate here.</p>
-          </div>
         )}
 
         {activeTab === 'settings' && (

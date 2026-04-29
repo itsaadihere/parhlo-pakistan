@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '@/utils/supabase';
+import { getDeterministicRating } from '@/utils/courseHelpers';
 
 export default function ParhloPakistan() {
   const router = useRouter();
@@ -60,15 +61,18 @@ export default function ParhloPakistan() {
       // Fallback to empty if DB fails
       setFeaturedCourses([]);
     } else if (data && data.length > 0) {
-      const mappedCourses = data.map(course => ({
-        title: course.name,
-        slug: course.slug,
-        thumbnail: course.thumbnail,
-        price: course.price || '0',
-        students: course.students || '0',
-        rating: course.rating || '5.0',
-        tag: course.tag || 'New'
-      }));
+      const mappedCourses = data.map(course => {
+        const studentsCount = parseInt(course.students) || 0;
+        return {
+          title: course.name,
+          slug: course.slug,
+          thumbnail: course.thumbnail,
+          price: course.price || '0',
+          students: studentsCount >= 5 ? String(studentsCount) : null,
+          rating: getDeterministicRating(course.slug),
+          tag: course.tag || 'New'
+        };
+      });
       setFeaturedCourses(mappedCourses);
     } else {
       setFeaturedCourses([]);
@@ -112,7 +116,7 @@ export default function ParhloPakistan() {
         </div>
         <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
           <Link href="/" className="text-green-600 transition-colors">Home</Link>
-          <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
+          <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Subjects</Link>
           <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
         </div>
         {userRole === 'admin' ? (
@@ -139,17 +143,17 @@ export default function ParhloPakistan() {
 
       <header className="max-w-6xl mx-auto px-8 py-20 md:py-32 text-center">
         <div className="inline-block px-5 py-2 bg-white border border-gray-200 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-500 mb-8 shadow-sm">
-          🚀 Pakistan's High-Impact Skill Platform
+          🚀 Pakistan's first ever-Gen-Z instructors Platform
         </div>
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-10 leading-[0.85] text-gray-900">
-          LEARN. EARN. <br /><span className="text-green-600">REPEAT.</span>
+          LEARN SMART. <br /><span className="text-green-600">SCORE HIGH.</span>
         </h1>
         <p className="text-gray-500 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-          Professional courses built for the next generation of Pakistani digital experts.
+          Complete Sindh Board preparation with visual glass board learning, expert instructors, and exam-focused content.
         </p>
         <Link href="/courses">
           <button className="bg-gray-900 text-white px-12 py-5 rounded-full font-black text-lg hover:bg-green-600 transition-all shadow-2xl hover:-translate-y-1">
-            Browse Courses
+            Start Learning Now
           </button>
         </Link>
       </header>
@@ -157,7 +161,7 @@ export default function ParhloPakistan() {
       <section className="max-w-6xl mx-auto px-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-32">
         {[
           { label: 'Students', val: '5,000+', icon: <Users size={22}/> },
-          { label: 'Courses', val: '12+', icon: <PlayCircle size={22}/> },
+          { label: 'Subjects', val: '12+', icon: <PlayCircle size={22}/> },
           { label: 'Success Rate', val: '94%', icon: <ShieldCheck size={22}/> },
           { label: 'Global reach', val: '12', icon: <Globe size={22}/> }
         ].map((stat, i) => (
@@ -170,11 +174,14 @@ export default function ParhloPakistan() {
       </section>
 
       <section className="max-w-6xl mx-auto px-8 pb-40">
-        <div className="flex justify-between items-end mb-16">
-          <h2 className="text-5xl font-black tracking-tight text-gray-900">Featured Courses</h2>
-          <Link href="/courses" className="text-gray-900 font-bold flex items-center gap-2 hover:text-green-600 transition-colors">
-            View All <ChevronRight size={20} />
-          </Link>
+        <div className="mb-16">
+          <div className="flex justify-between items-end mb-4">
+            <h2 className="text-5xl font-black tracking-tight text-gray-900">Available Subjects</h2>
+            <Link href="/courses" className="text-gray-900 font-bold flex items-center gap-2 hover:text-green-600 transition-colors">
+              View All <ChevronRight size={20} />
+            </Link>
+          </div>
+          <p className="text-gray-500 max-w-2xl font-medium">Explore our Sindh Board courses designed for clear concept building, strong exam preparation, and better academic performance.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -193,7 +200,9 @@ export default function ParhloPakistan() {
               <div className="p-10">
                 <div className="flex items-center gap-2 mb-4">
                   <Star size={16} className="text-yellow-400" fill="currentColor" />
-                  <span className="text-xs font-bold text-gray-400">{course.rating || '5.0'} • {course.students || '0'} Students</span>
+                  <span className="text-xs font-bold text-gray-400">
+                    {course.rating} {course.students ? `• ${course.students} Students` : ''}
+                  </span>
                 </div>
                 <h3 className="text-2xl font-black mb-10 leading-tight group-hover:text-green-600 transition-colors">{course.title}</h3>
                 <div className="flex justify-between items-center pt-6 border-t border-gray-50">
@@ -216,27 +225,33 @@ export default function ParhloPakistan() {
             <div className="col-span-2">
               <img src="/logo.png" alt="Logo" className="h-16 mb-6" />
               <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
-                Empowering the youth of Pakistan with digital skills that matter. Join the revolution of online learning today.
+                Helping Class 9 Sindh Board students achieve top results through concept-based digital learning. Join Parhlo Pakistan and study smarter from home.
               </p>
             </div>
             <div>
               <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Quick Links</h4>
               <ul className="space-y-4 text-gray-500 text-sm font-semibold">
-                <li><Link href="/courses" className="hover:text-green-600 cursor-pointer">Browse Courses</Link></li>
+                <li><Link href="/courses" className="hover:text-green-600 cursor-pointer">Browse Subjects</Link></li>
                 <li className="hover:text-green-600 cursor-pointer">Privacy Policy</li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Support</h4>
-              <p className="text-gray-500 text-sm font-semibold">help@parhlopakistan.com</p>
+              <p className="text-gray-500 text-sm font-semibold mb-2">Need help? Contact us:</p>
+              <p className="text-gray-500 text-sm font-semibold mb-2">parhlo.pakistan.edu@gmail.com</p>
+              <p className="text-gray-500 text-sm font-semibold">📱 WhatsApp: 0330 2882822</p>
             </div>
           </div>
           <div className="pt-10 border-t border-gray-100 text-center">
+            <p className="text-gray-600 font-bold mb-6">Trusted by students across Karachi for Class 9 Board Preparation</p>
             <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
-            <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base">
+            <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-4">
               Mockup Media (SMC-Private) Limited
             </a>
-            <p className="mt-4 text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+            <div className="flex justify-center items-center flex-col gap-2">
+              <p className="text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+              <p className="text-black text-[10px] font-bold">Concepts Clear Hain Boss 🚀</p>
+            </div>
           </div>
         </div>
       </footer>

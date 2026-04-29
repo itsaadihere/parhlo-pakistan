@@ -86,11 +86,17 @@ export default function AdminDashboard() {
       // Map purchases to include course names for display
       const mappedPayments = purchases.map(p => {
         const course = (courses || []).find(c => c.slug === p.course_slug);
+        
+        const originalPrice = parseFloat(String(course?.price || '0').replace(/[^0-9.]/g, '')) || 0;
+        const discountPercent = parseFloat(String(course?.discount || '0').replace(/[^0-9.]/g, '')) || 0;
+        const finalPrice = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
+
         return {
           id: p.id,
           userEmail: p.student_email,
           courseSlug: p.course_slug,
           courseName: course ? course.name : p.course_slug,
+          coursePrice: finalPrice,
           status: p.status,
           receiptImage: p.payment_screenshot_url,
           date: new Date(p.created_at).toLocaleDateString(),
@@ -226,7 +232,7 @@ export default function AdminDashboard() {
 
   const menuItems = [
     { name: 'Dashboard', icon: <Globe size={20} />, id: 'dashboard' },
-    { name: 'Courses', icon: <PlayCircle size={20} />, id: 'courses' },
+    { name: 'Subjects', icon: <PlayCircle size={20} />, id: 'courses' },
     { name: 'Enrollments', icon: <Users size={20} />, id: 'enrollments' },
     { name: 'Payments', icon: <CreditCard size={20} />, id: 'payments' },
     { name: 'Settings', icon: <ShieldCheck size={20} />, id: 'settings' }
@@ -267,9 +273,9 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-4 gap-6 mb-10">
               {[
-                { label: 'Total Revenue', val: `PKR ${approvedPayments.length > 0 ? approvedPayments.length * 2500 : 0}`, color: 'bg-green-50 text-green-600' },
+                { label: 'Total Revenue', val: `PKR ${approvedPayments.reduce((sum, p) => sum + (p.coursePrice || 0), 0).toLocaleString()}`, color: 'bg-green-50 text-green-600' },
                 { label: 'Total Students', val: approvedPayments.length, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Active Courses', val: String(adminCourses.length), color: 'bg-emerald-50 text-emerald-600' },
+                { label: 'Active Subjects', val: String(adminCourses.length), color: 'bg-emerald-50 text-emerald-600' },
                 { label: 'Pending Approvals', val: String(pendingApprovals.length), color: 'bg-amber-50 text-amber-600' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 flex items-center gap-4 shadow-sm">

@@ -56,7 +56,7 @@ export default function AboutPage() {
       
       <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
         <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
-        <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Courses</Link>
+        <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Subjects</Link>
         <Link href="/about" className="text-green-600 transition-colors">About</Link>
       </div>
       
@@ -84,21 +84,40 @@ export default function AboutPage() {
   );
 
   const Footer = () => (
-    <footer className="bg-white border-t border-gray-200 pt-16 pb-10 mt-20">
-      <div className="max-w-6xl mx-auto px-8 text-center">
-        <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-6" />
-        <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">
-          Designed & Developed by
-        </p>
-        <a 
-          href="https://mockup.media" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-6"
-        >
-          Mockup Media (SMC-Private) Limited
-        </a>
-        <p className="text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+    <footer className="bg-white border-t border-gray-200 pt-16 pb-10">
+      <div className="max-w-6xl mx-auto px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          <div className="col-span-2">
+            <img src="/logo.png" alt="Logo" className="h-16 mb-6" />
+            <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
+              Helping Class 9 Sindh Board students achieve top results through concept-based digital learning. Join Parhlo Pakistan and study smarter from home.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Quick Links</h4>
+            <ul className="space-y-4 text-gray-500 text-sm font-semibold">
+              <li><Link href="/courses" className="hover:text-green-600 cursor-pointer">Browse Subjects</Link></li>
+              <li className="hover:text-green-600 cursor-pointer">Privacy Policy</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-xs">Support</h4>
+            <p className="text-gray-500 text-sm font-semibold mb-2">Need help? Contact us:</p>
+            <p className="text-gray-500 text-sm font-semibold mb-2">parhlo.pakistan.edu@gmail.com</p>
+            <p className="text-gray-500 text-sm font-semibold">📱 WhatsApp: 0330 2882822</p>
+          </div>
+        </div>
+        <div className="pt-10 border-t border-gray-100 text-center">
+          <p className="text-gray-600 font-bold mb-6">Trusted by students across Karachi for Class 9 Board Preparation</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
+          <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-4">
+            Mockup Media (SMC-Private) Limited
+          </a>
+          <div className="flex justify-center items-center flex-col gap-2">
+            <p className="text-black text-[10px] font-bold">© 2026 Parhlo Pakistan. All Rights Reserved.</p>
+            <p className="text-black text-[10px] font-bold">Concepts Clear Hain Boss 🚀</p>
+          </div>
+        </div>
       </div>
     </footer>
   );
@@ -113,8 +132,7 @@ export default function AboutPage() {
           OUR <span className="text-green-600">MISSION.</span>
         </h1>
         <p className="text-xl text-gray-500 font-medium leading-relaxed">
-          We aren't just an EdTech platform. We are a movement dedicated to bridging the gap 
-          between traditional education and the modern digital economy for the youth of Pakistan.
+          We are a movement dedicated to bridging the gap between traditional education and the digital education for the youth of Pakistan.
         </p>
       </section>
 
@@ -123,17 +141,17 @@ export default function AboutPage() {
         {[
           { 
             title: "Expert Mentorship", 
-            desc: "Learn directly from industry leaders who have already paved the way in freelancing and tech.",
+            desc: "Learn directly from leading digital instructors who have already paved the way in edtech.",
             icon: <Users className="text-green-600" size={32} />
           },
           { 
             title: "Result Oriented", 
-            desc: "Our courses are designed to help you start earning within weeks, not years.",
+            desc: "Our subjects are designed to help you ace your board exams, using digital learning.",
             icon: <Target className="text-green-600" size={32} />
           },
           { 
             title: "Innovation First", 
-            desc: "We stay ahead of the curve, teaching the latest tools like AI, WordPress, and Finance.",
+            desc: "We stay ahead of the curve, teaching using latest methodology such as visually glass board teaching by gen z instructors.",
             icon: <Rocket className="text-green-600" size={32} />
           }
         ].map((value, i) => (
@@ -151,10 +169,8 @@ export default function AboutPage() {
       <section className="bg-white py-32 border-y border-gray-100">
         <div className="max-w-6xl mx-auto px-8 grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
           <div className="relative">
-            <div className="aspect-square bg-gray-100 rounded-[4rem] overflow-hidden">
-               <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-2xl italic">
-                 Parhlo Pakistan HQ
-               </div>
+            <div className="aspect-square bg-gray-100 rounded-[4rem] overflow-hidden relative">
+               <img src="/about-hq.png" alt="Parhlo Pakistan HQ" className="absolute inset-0 w-full h-full object-cover" />
             </div>
             <div className="absolute -bottom-10 -right-10 bg-green-600 text-white p-10 rounded-[2.5rem] hidden md:block">
               <p className="text-4xl font-black italic">5,000+</p>
@@ -166,23 +182,16 @@ export default function AboutPage() {
             <h2 className="text-5xl font-black tracking-tight mb-8">Why We Started</h2>
             <div className="space-y-6 text-gray-500 font-medium leading-relaxed">
               <p>
-                In a rapidly changing world, traditional degrees are often not enough. Pakistan has the 
-                world's third-largest freelance community, yet many struggle to find proper guidance.
+                With rising inflation, the cost of travelling to academies has significantly increased, making traditional learning more difficult for many families. Students often have to attend classes regardless of their focus or readiness, which affects their ability to understand concepts effectively.
               </p>
               <p>
-                Parhlo Pakistan was born to change that. We provide high-quality, Urdu-based professional 
-                training that focuses on practical skills over theory.
+                Parhlo Pakistan was created to solve this problem by introducing smart digital learning, allowing students to study from home with better focus, flexibility, and clear concept-based understanding through modern teaching methods.
               </p>
-              <div className="pt-6 grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="text-green-600" />
-                  <span className="text-sm font-bold text-gray-900">Secure Payments</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Award className="text-green-600" />
-                  <span className="text-sm font-bold text-gray-900">Certified Courses</span>
-                </div>
-              </div>
+              
+              <h3 className="text-2xl font-black text-gray-900 mt-8 mb-4">Secure Learning</h3>
+              <p>
+                We provide a reliable and student-friendly platform where students can access high-quality lectures anytime, ensuring a safe, flexible, and effective learning experience without the burden of travel.
+              </p>
             </div>
           </div>
         </div>

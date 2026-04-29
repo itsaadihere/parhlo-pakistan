@@ -11,6 +11,7 @@ import {
   Filter,
   ChevronRight
 } from 'lucide-react';
+import { getDeterministicRating } from '@/utils/courseHelpers';
 
 import { supabase } from '@/utils/supabase';
 
@@ -79,18 +80,21 @@ export default function AllCourses() {
       setCourses([]);
     } else if (data) {
       setCoursesError(null);
-      const persistedCourses = data.map((course) => ({
-        title: course.name,
-        price: course.price || '0',
-        students: course.students || '0',
-        rating: course.rating || '5.0',
-        tag: course.tag || 'New',
-        slug: course.slug,
-        thumbnail: course.thumbnail,
-        instructorImage: course.instructorImage,
-        imageClass: 'from-slate-900 via-slate-700 to-green-600',
-        description: course.category ? `${course.category} course` : 'New course content available now.',
-      }));
+      const persistedCourses = data.map((course) => {
+        const studentsCount = parseInt(course.students) || 0;
+        return {
+          title: course.name,
+          price: course.price || '0',
+          students: studentsCount >= 5 ? String(studentsCount) : null,
+          rating: getDeterministicRating(course.slug),
+          tag: course.tag || 'New',
+          slug: course.slug,
+          thumbnail: course.thumbnail,
+          instructorImage: course.instructorImage,
+          imageClass: 'from-slate-900 via-slate-700 to-green-600',
+          description: course.category ? `${course.category} course` : 'New course content available now.',
+        };
+      });
       setCourses(persistedCourses);
     }
     setLoading(false);
@@ -106,7 +110,7 @@ export default function AllCourses() {
         </div>
         <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
           <Link href="/" className="hover:text-green-600 transition-colors">Home</Link>
-          <Link href="/courses" className="text-green-600 transition-colors cursor-pointer">Courses</Link>
+          <Link href="/courses" className="text-green-600 transition-colors cursor-pointer">Subjects</Link>
           <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
         </div>
         {userRole === 'admin' ? (
@@ -133,8 +137,8 @@ export default function AllCourses() {
 
       <main className="max-w-7xl mx-auto px-8 py-16">
         <div className="mb-16">
-          <h2 className="text-5xl font-black tracking-tight text-gray-900 mb-4">Available Courses</h2>
-          <p className="text-gray-500 font-medium max-w-xl">Explore our professional course catalog designed for fast career growth and practical skill development.</p>
+          <h2 className="text-5xl font-black tracking-tight text-gray-900 mb-4">Available Subjects</h2>
+          <p className="text-gray-500 font-medium max-w-xl">Explore our Sindh Board courses designed for clear concept building, strong exam preparation, and better academic performance.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-20">
@@ -158,8 +162,8 @@ export default function AllCourses() {
             ))
           ) : courses.length > 0 ? courses.map((course, i) => {
             const meta = [];
-            if (shouldShowRating(course.rating)) meta.push(course.rating);
-            if (shouldShowStudents(course.students)) meta.push(`${course.students} Students`);
+            if (course.rating) meta.push(course.rating);
+            if (course.students) meta.push(`${course.students} Students`);
             return (
               <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
                 <div className={`h-56 overflow-hidden relative bg-gradient-to-br ${course.imageClass}`}>
@@ -190,7 +194,7 @@ export default function AllCourses() {
                     <span className="text-2xl font-black text-gray-900">Rs. {course.price}</span>
                     <Link href={`/courses/${course.slug}`}>
                       <button className="bg-gray-100 hover:bg-[#064e3b] hover:text-white px-8 py-3 rounded-2xl font-black transition-all text-gray-900 uppercase text-[10px] tracking-widest">
-                        View Course
+                        View Subject
                       </button>
                     </Link>
                   </div>
@@ -199,7 +203,7 @@ export default function AllCourses() {
             );
           }) : (
             <div className="col-span-full rounded-[3rem] border border-gray-200 bg-white p-16 text-center text-gray-500">
-              No courses are currently available. Admin-managed courses will appear here.
+              No subjects are currently available. Admin-managed subjects will appear here.
             </div>
           )}
         </div>

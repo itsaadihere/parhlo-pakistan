@@ -16,8 +16,13 @@ import {
   Share2,
   X,
   CreditCard,
-  Upload
+  Upload,
+  Star,
+  Users
 } from 'lucide-react';
+
+import { supabase } from '@/utils/supabase';
+import { getDeterministicRating } from '@/utils/courseHelpers';
 
 const parsePriceValue = (value) => {
   if (value === undefined || value === null) return 0;
@@ -29,8 +34,6 @@ const formatCurrency = (value) => {
   if (value === undefined || value === null || Number.isNaN(value)) return '0';
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
 };
-
-import { supabase } from '@/utils/supabase';
 
 export default function DynamicCourseDetail() {
   const params = useParams();
@@ -129,6 +132,7 @@ export default function DynamicCourseDetail() {
         const discountPercent = parseFloat(String(adminCourse.discount || '').replace(/[^0-9.]/g, '')) || 0;
         const salePriceValue = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
         const savings = discountPercent > 0 ? originalPrice - salePriceValue : 0;
+        const studentsCount = parseInt(adminCourse.students) || 0;
 
         setCourseData({
           title: adminCourse.name || 'New Course',
@@ -139,6 +143,8 @@ export default function DynamicCourseDetail() {
           salePrice: formatCurrency(salePriceValue),
           discount: discountPercent > 0 ? discountPercent : 0,
           savings: savings > 0 ? formatCurrency(savings) : null,
+          students: studentsCount >= 5 ? String(studentsCount) : null,
+          rating: getDeterministicRating(adminCourse.slug),
           instructor: adminCourse.instructor || 'Admin Instructor',
           instructorImage: adminCourse.instructorImage,
           instructorIntro: adminCourse.instructorIntro || `Learn ${adminCourse.name} with practical video lectures and real examples.`,
@@ -278,6 +284,37 @@ export default function DynamicCourseDetail() {
     }
   }, [showPreviewOverlay]);
 
+  useEffect(() => {
+    let interval;
+    if (showPreviewOverlay && userEmail && courseData && previewItem) {
+      interval = setInterval(() => {
+        const key = `parhlo_watch_${userEmail}_${courseData.slug}`;
+        let progressData = {};
+        try {
+          progressData = JSON.parse(window.localStorage.getItem(key) || '{}');
+          if (typeof progressData !== 'object' || progressData === null) progressData = {};
+        } catch (e) {
+          progressData = {};
+        }
+
+        const lectureId = String(previewItem.id);
+        const currentSeconds = progressData[lectureId] || 0;
+        
+        let maxSeconds = 900; // default 15 mins
+        if (previewItem.duration && previewItem.duration.includes('min')) {
+           maxSeconds = (parseInt(previewItem.duration) || 15) * 60;
+        }
+
+        // Cap the max watch time for a lecture so replays don't increase it indefinitely
+        if (currentSeconds < maxSeconds) {
+           progressData[lectureId] = currentSeconds + 10;
+           window.localStorage.setItem(key, JSON.stringify(progressData));
+        }
+      }, 10000);
+    }
+    return () => clearInterval(interval);
+  }, [showPreviewOverlay, userEmail, courseData, previewItem]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -391,6 +428,20 @@ export default function DynamicCourseDetail() {
             <h1 className="text-5xl md:text-6xl font-black mt-6 mb-8 tracking-tighter leading-tight">
               {courseData.title}
             </h1>
+            
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md">
+                <Star size={16} className="text-yellow-400" fill="currentColor" />
+                <span className="font-bold text-sm">{courseData.rating}</span>
+              </div>
+              {courseData.students && (
+                <div className="flex items-center gap-2 text-emerald-100 font-medium text-sm">
+                  <Users size={16} />
+                  {courseData.students} Students Enrolled
+                </div>
+              )}
+            </div>
+
             <p className="text-emerald-100/80 text-lg md:text-xl font-medium max-w-xl leading-relaxed mb-10">
               {courseData.description}
             </p>
@@ -561,7 +612,7 @@ export default function DynamicCourseDetail() {
             <button
               type="button"
               onClick={closePreview}
-              className="absolute right-4 top-4 z-10 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-slate-900 shadow-lg hover:bg-white"
+              className="absolute right-4 top-4 z-30 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-slate-900 shadow-lg hover:bg-white"
             >
               Close
             </button>
