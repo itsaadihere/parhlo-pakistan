@@ -189,7 +189,7 @@ export default function ParhloPakistan() {
             <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
               <div className="h-56 relative bg-gradient-to-br from-slate-900 via-slate-700 to-green-600 flex items-center justify-center overflow-hidden">
                 {course.thumbnail && (
-                  <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
                 )}
                 <div className="absolute inset-0 bg-black/30" />
                 <div className="absolute top-6 left-6 z-10">
@@ -223,7 +223,7 @@ export default function ParhloPakistan() {
         <div className="max-w-6xl mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-2">
-              <img src="/logo.png" alt="Logo" className="h-16 mb-6" />
+              <img src="/logo.png" alt="Logo" className="h-16 mb-6" loading="lazy" decoding="async" />
               <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
                 Helping Class 9 Sindh Board students achieve top results through concept-based digital learning. Join Parhlo Pakistan and study smarter from home.
               </p>

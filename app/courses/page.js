@@ -168,7 +168,7 @@ export default function AllCourses() {
               <div key={i} className="bg-white rounded-[3rem] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all duration-500">
                 <div className={`h-56 overflow-hidden relative bg-gradient-to-br ${course.imageClass}`}>
                   {course.thumbnail && (
-                    <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={course.thumbnail} alt={course.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
                   )}
                   <div className="absolute inset-0 bg-black/30" />
                   <div className="absolute top-6 left-6 z-10">
@@ -181,7 +181,7 @@ export default function AllCourses() {
                 <div className="p-10 pt-6 relative">
                   {course.instructorImage && (
                     <div className="absolute -top-6 right-8 w-12 h-12 rounded-full border-4 border-white shadow-md overflow-hidden bg-white z-20">
-                      <img src={course.instructorImage} alt="Instructor" className="w-full h-full object-cover" />
+                      <img src={course.instructorImage} alt="Instructor" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </div>
                   )}
                   {meta.length > 0 && (
@@ -220,7 +220,7 @@ export default function AllCourses() {
 
       <footer className="bg-white border-t border-gray-200 pt-16 pb-10 mt-20">
         <div className="max-w-6xl mx-auto px-8 text-center">
-           <img src="/logo.png" alt="Logo" className="h-16 mb-6 mx-auto" />
+           <img src="/logo.png" alt="Logo" className="h-16 mb-6 mx-auto" loading="lazy" decoding="async" />
            <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
             <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-6">
               Mockup Media (SMC-Private) Limited
