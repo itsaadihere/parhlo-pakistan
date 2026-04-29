@@ -219,7 +219,8 @@ export default function AdminDashboard() {
   const approvedPayments = payments.filter(p => p.status === 'approved');
 
   const getEnrollments = () => {
-    const studentEmails = [...new Set(payments.filter(p => p.status === 'approved').map(p => p.userEmail))];
+    let studentEmails = [...new Set(payments.filter(p => p.status === 'approved').map(p => p.userEmail))];
+    studentEmails = studentEmails.filter(email => email !== 'parhlo.pakistan.edu@gmail.com');
     return studentEmails.map(email => {
       const studentPayments = payments.filter(p => p.userEmail === email);
       return {
