@@ -112,15 +112,15 @@ export default function ParhloPakistan() {
         {/* Hero Background Image */}
         <div className="absolute inset-0 bg-[url('/hero-bg.png')] bg-cover bg-center bg-no-repeat"></div>
         {/* Gradient overlays to ensure text readability */}
-        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="absolute inset-0 bg-black/30"></div>
         {/* Reduced bottom gradient length */}
         <div className="absolute bottom-0 w-full h-48 bg-gradient-to-t from-gray-50 to-transparent z-0"></div>
         
         {/* Transparent Header Menu */}
-        <nav className="relative flex justify-between items-center z-50 p-4 border-b border-white/10">
+        <nav className="relative flex justify-between items-center z-50 p-4">
           <div className="pl-8">
             <Link href="/">
-              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer brightness-0 invert" />
+              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
             </Link>
           </div>
           <div className="hidden md:flex gap-10 text-sm font-bold text-gray-200">
