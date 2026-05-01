@@ -141,22 +141,30 @@ export default function ParhloPakistan() {
         )}
       </nav>
 
-      <header className="max-w-6xl mx-auto px-8 py-20 md:py-32 text-center">
-        <div className="inline-block px-5 py-2 bg-white border border-gray-200 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-500 mb-8 shadow-sm">
-          🚀 Pakistan's first ever-Gen-Z instructors Platform
-        </div>
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-10 leading-[0.85] text-gray-900">
-          LEARN SMART. <br /><span className="text-green-600">SCORE HIGH.</span>
-        </h1>
-        <p className="text-gray-500 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-          Complete Sindh Board preparation with visual glass board learning, expert instructors, and exam-focused content.
-        </p>
-        <Link href="/courses">
-          <button className="bg-gray-900 text-white px-12 py-5 rounded-full font-black text-lg hover:bg-green-600 transition-all shadow-2xl hover:-translate-y-1">
-            Start Learning Now
-          </button>
-        </Link>
-      </header>
+      <div className="relative w-full">
+        {/* Hero Background Image */}
+        <div className="absolute inset-0 bg-[url('/hero-bg.png')] bg-cover bg-center bg-no-repeat"></div>
+        {/* Gradient overlays to ensure text readability and blend with the next section */}
+        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-900/40 to-gray-50"></div>
+        
+        <header className="relative max-w-6xl mx-auto px-8 py-24 md:py-40 text-center z-10">
+          <div className="inline-block px-5 py-2 bg-black/30 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-100 mb-8 shadow-sm">
+            🚀 Pakistan's first ever-Gen-Z instructors Platform
+          </div>
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-10 leading-[0.85] text-white drop-shadow-2xl">
+            LEARN SMART. <br /><span className="text-green-400">SCORE HIGH.</span>
+          </h1>
+          <p className="text-gray-100 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-xl">
+            Complete Sindh Board preparation with visual glass board learning, expert instructors, and exam-focused content.
+          </p>
+          <Link href="/courses">
+            <button className="bg-green-500 text-gray-900 px-12 py-5 rounded-full font-black text-lg hover:bg-white hover:text-green-700 transition-all shadow-2xl hover:-translate-y-1">
+              Start Learning Now
+            </button>
+          </Link>
+        </header>
+      </div>
 
       <section className="max-w-6xl mx-auto px-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-32">
         {[
