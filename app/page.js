@@ -108,47 +108,49 @@ export default function ParhloPakistan() {
         </div>
       )}
       
-      <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
-        <div className="pl-8">
-          <Link href="/">
-            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
-          </Link>
-        </div>
-        <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
-          <Link href="/" className="text-green-600 transition-colors">Home</Link>
-          <Link href="/courses" className="hover:text-green-600 transition-colors cursor-pointer">Subjects</Link>
-          <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
-        </div>
-        {userRole === 'admin' ? (
-          <Link href="/admin" className="mr-4">
-            <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
-              Admin Panel
-            </button>
-          </Link>
-        ) : userRole === 'student' ? (
-          <Link href="/dashboard" className="mr-4">
-            <button className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-700 transition-all shadow-lg">
-              My Dashboard
-            </button>
-          </Link>
-        ) : (
-          <button 
-            onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-            className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
-          >
-            Join Now
-          </button>
-        )}
-      </nav>
-
       <div className="relative w-full">
         {/* Hero Background Image */}
         <div className="absolute inset-0 bg-[url('/hero-bg.png')] bg-cover bg-center bg-no-repeat"></div>
-        {/* Gradient overlays to ensure text readability and blend with the next section */}
+        {/* Gradient overlays to ensure text readability */}
         <div className="absolute inset-0 bg-black/50"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-900/40 to-gray-50"></div>
+        {/* Reduced bottom gradient length */}
+        <div className="absolute bottom-0 w-full h-48 bg-gradient-to-t from-gray-50 to-transparent z-0"></div>
         
-        <header className="relative max-w-6xl mx-auto px-8 py-24 md:py-40 text-center z-10">
+        {/* Transparent Header Menu */}
+        <nav className="relative flex justify-between items-center z-50 p-4 border-b border-white/10">
+          <div className="pl-8">
+            <Link href="/">
+              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer brightness-0 invert" />
+            </Link>
+          </div>
+          <div className="hidden md:flex gap-10 text-sm font-bold text-gray-200">
+            <Link href="/" className="text-green-400 transition-colors">Home</Link>
+            <Link href="/courses" className="hover:text-green-400 transition-colors cursor-pointer">Subjects</Link>
+            <Link href="/about" className="hover:text-green-400 transition-colors">About</Link>
+          </div>
+          {userRole === 'admin' ? (
+            <Link href="/admin" className="mr-4">
+              <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
+                Admin Panel
+              </button>
+            </Link>
+          ) : userRole === 'student' ? (
+            <Link href="/dashboard" className="mr-4">
+              <button className="bg-green-500 text-gray-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white hover:text-green-700 transition-all shadow-lg">
+                My Dashboard
+              </button>
+            </Link>
+          ) : (
+            <button 
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              className="bg-green-500 text-gray-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white hover:text-green-700 transition-all shadow-lg mr-4"
+            >
+              Join Now
+            </button>
+          )}
+        </nav>
+
+        <header className="relative max-w-6xl mx-auto px-8 py-20 md:py-32 text-center z-10">
           <div className="inline-block px-5 py-2 bg-black/30 backdrop-blur-md border border-white/20 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-100 mb-8 shadow-sm">
             🚀 Pakistan's first ever-Gen-Z instructors Platform
           </div>
