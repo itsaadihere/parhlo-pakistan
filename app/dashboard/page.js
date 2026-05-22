@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
+import InactivityTracker from '@/app/components/InactivityTracker';
 
 export default function StudentDashboard() {
   const router = useRouter();
@@ -192,6 +193,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
+      <InactivityTracker onLogout={handleLogout} timeoutMs={15 * 60 * 1000} />
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col hidden md:flex">
         <div className="p-6 flex items-center gap-3 border-b border-gray-50">

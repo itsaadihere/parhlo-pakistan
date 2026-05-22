@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '@/utils/supabase';
+import InactivityTracker from '@/app/components/InactivityTracker';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -117,6 +118,7 @@ export default function AdminDashboard() {
     }
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('parhloAdmin');
+      window.localStorage.removeItem('currentUserEmail');
     }
     router.push('/');
   };
@@ -241,6 +243,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
+      <InactivityTracker onLogout={handleLogout} timeoutMs={15 * 60 * 1000} />
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
         <div className="p-6 flex items-center gap-3">
           <Link href="/">

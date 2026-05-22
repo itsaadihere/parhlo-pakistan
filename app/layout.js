@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import TidioChat from "./components/TidioChat";
+import MetaPixel from "./components/MetaPixel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
         {children}
         <SpeedInsights />
         <TidioChat />
+        <MetaPixel />
       </body>
     </html>
   );
