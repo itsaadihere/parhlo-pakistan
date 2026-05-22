@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import TidioChat from "./components/TidioChat";
 import MetaPixel from "./components/MetaPixel";
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
         <SpeedInsights />
+        <Analytics />
         <TidioChat />
         <MetaPixel />
       </body>
