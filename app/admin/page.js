@@ -16,7 +16,8 @@ import {
   BookOpen,
   CheckCircle2,
   LogOut,
-  Clock
+  Clock,
+  Menu
 } from 'lucide-react';
 
 import { supabase } from '@/utils/supabase';
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminTab, setAdminTab] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adminCourses, setAdminCourses] = useState([]);
   const [payments, setPayments] = useState([]);
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState(null);
@@ -244,7 +246,9 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
       <InactivityTracker onLogout={handleLogout} timeoutMs={15 * 60 * 1000} />
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col">
+      
+      {/* Desktop Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-100 flex-col hidden md:flex">
         <div className="p-6 flex items-center gap-3">
           <Link href="/">
             <img src="/logo.png" alt="Logo" className="h-8" />
@@ -267,7 +271,50 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
-      <main className="flex-1 p-10 overflow-y-auto h-screen">
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto h-screen relative">
+        {/* Mobile Header */}
+        <div className="md:hidden flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-900"><Menu size={24}/></button>
+            <img src="/logo.png" alt="Logo" className="h-8" />
+          </div>
+          <button onClick={handleLogout} className="text-gray-500 hover:text-red-600"><LogOut size={20}/></button>
+        </div>
+
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-[100] flex">
+            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+            <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-full relative z-10 shadow-2xl transition-transform">
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-900"
+              >
+                <X size={24} />
+              </button>
+              <div className="p-6 flex items-center gap-3">
+                <Link href="/">
+                  <img src="/logo.png" alt="Logo" className="h-8" />
+                </Link>
+                <span className="font-bold text-green-800">Admin</span>
+              </div>
+              <nav className="flex-1 px-4 space-y-2 mt-4">
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setAdminTab(item.id); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${adminTab === item.id ? 'bg-[#064e3b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+                  >
+                    {item.icon} {item.name}
+                  </button>
+                ))}
+              </nav>
+              <button onClick={handleLogout} className="m-6 flex items-center gap-3 px-4 py-3 text-gray-500 font-bold text-sm hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+                <LogOut size={20} /> Sign Out
+              </button>
+            </aside>
+          </div>
+        )}
         {adminTab === 'dashboard' && (
           <>
             <header className="mb-10">

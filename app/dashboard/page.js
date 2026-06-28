@@ -12,7 +12,9 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Menu,
+  X
 } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
 import InactivityTracker from '@/app/components/InactivityTracker';
@@ -20,6 +22,7 @@ import InactivityTracker from '@/app/components/InactivityTracker';
 export default function StudentDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [studentName, setStudentName] = useState('Student');
@@ -236,11 +239,67 @@ export default function StudentDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto relative">
+        {/* Mobile Header */}
         <div className="md:hidden flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-          <img src="/logo.png" alt="Logo" className="h-8" />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-900"><Menu size={24}/></button>
+            <img src="/logo.png" alt="Logo" className="h-8" />
+          </div>
           <button onClick={handleLogout} className="text-gray-500 hover:text-red-600"><LogOut size={20}/></button>
         </div>
+
+        {/* Mobile Sidebar Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-[100] flex">
+            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+            <aside className="w-64 bg-white border-r border-gray-100 flex flex-col h-full relative z-10 shadow-2xl transition-transform">
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-900"
+              >
+                <X size={24} />
+              </button>
+              <div className="p-6 flex items-center gap-3 border-b border-gray-50">
+                <Link href="/">
+                  <img src="/logo.png" alt="Logo" className="h-10 cursor-pointer" />
+                </Link>
+              </div>
+              
+              <div className="p-6 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-black text-xl uppercase">
+                  {studentName.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-gray-900">Welcome back,</p>
+                  <p className="text-xs text-gray-500 font-medium truncate max-w-[120px]">{studentName}</p>
+                </div>
+              </div>
+
+              <nav className="flex-1 px-4 space-y-2 mt-2">
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                      activeTab === item.id 
+                      ? 'bg-green-50 text-green-700' 
+                      : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.icon} {item.name}
+                  </button>
+                ))}
+              </nav>
+              <button 
+                onClick={handleLogout} 
+                className="m-6 flex items-center gap-3 px-4 py-3 text-gray-500 font-bold text-sm hover:text-red-600 transition-colors rounded-xl hover:bg-red-50"
+              >
+                <LogOut size={20} /> Sign Out
+              </button>
+            </aside>
+          </div>
+        )}
 
         {activeTab === 'overview' && (
           <>

@@ -9,7 +9,9 @@ import {
   Star, 
   Search,
   Filter,
-  ChevronRight
+  ChevronRight,
+  Menu,
+  X
 } from 'lucide-react';
 import { getDeterministicRating } from '@/utils/courseHelpers';
 
@@ -18,6 +20,7 @@ import { supabase } from '@/utils/supabase';
 export default function AllCourses() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -113,27 +116,65 @@ export default function AllCourses() {
           <Link href="/courses" className="text-green-600 transition-colors cursor-pointer">Subjects</Link>
           <Link href="/about" className="hover:text-green-600 transition-colors">About</Link>
         </div>
-        {userRole === 'admin' ? (
-          <Link href="/admin" className="mr-4">
-            <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
-              Admin Panel
+        <div className="hidden md:block">
+          {userRole === 'admin' ? (
+            <Link href="/admin" className="mr-4">
+              <button className="bg-[#064e3b] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg">
+                Admin Panel
+              </button>
+            </Link>
+          ) : userRole === 'student' ? (
+            <Link href="/dashboard" className="mr-4">
+              <button className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-700 transition-all shadow-lg">
+                My Dashboard
+              </button>
+            </Link>
+          ) : (
+            <button 
+              onClick={() => setShowAuthModal(true)}
+              className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
+            >
+              Join Now
             </button>
-          </Link>
-        ) : userRole === 'student' ? (
-          <Link href="/dashboard" className="mr-4">
-            <button className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-700 transition-all shadow-lg">
-              My Dashboard
-            </button>
-          </Link>
-        ) : (
-          <button 
-            onClick={() => setShowAuthModal(true)}
-            className="bg-gray-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:bg-green-600 transition-all shadow-lg mr-4"
-          >
-            Join Now
-          </button>
-        )}
+          )}
+        </div>
+        <button 
+          className="md:hidden text-gray-900 p-2"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
       </nav>
+
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-24 left-4 right-4 bg-white rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-6">
+          <Link href="/" className="text-gray-900 font-bold hover:text-green-600 text-lg" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+          <Link href="/courses" className="text-gray-900 font-bold hover:text-green-600 text-lg" onClick={() => setIsMobileMenuOpen(false)}>Subjects</Link>
+          <Link href="/about" className="text-gray-900 font-bold hover:text-green-600 text-lg" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+          <div className="pt-4 border-t border-gray-100">
+            {userRole === 'admin' ? (
+              <Link href="/admin">
+                <button className="w-full bg-[#064e3b] text-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition-all">
+                  Admin Panel
+                </button>
+              </Link>
+            ) : userRole === 'student' ? (
+              <Link href="/dashboard">
+                <button className="w-full bg-green-500 text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-green-400 transition-all">
+                  My Dashboard
+                </button>
+              </Link>
+            ) : (
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); setShowAuthModal(true); }}
+                className="w-full bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-600 transition-all"
+              >
+                Join Now
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-8 py-16">
         <div className="mb-16">
