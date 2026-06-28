@@ -47,12 +47,18 @@ export default function AboutPage() {
 
   const LandingNav = () => (
     <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
-      <div className="pl-8">
-        <Link href="/">
+      <div className="flex items-center gap-2">
+        <button 
+          className="md:hidden text-gray-900 p-2"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
+        <Link href="/" className="pl-2 md:pl-8">
           <img 
             src="/logo.png" 
             alt="Parhlo Pakistan Logo" 
-            className="h-20 w-auto object-contain cursor-pointer" 
+            className="h-10 md:h-20 w-auto object-contain cursor-pointer" 
           />
         </Link>
       </div>
@@ -85,12 +91,6 @@ export default function AboutPage() {
           </button>
         )}
       </div>
-      <button 
-        className="md:hidden text-gray-900 p-2"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-      </button>
 
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-24 left-4 right-4 bg-white rounded-3xl p-6 shadow-2xl z-50 flex flex-col gap-6">

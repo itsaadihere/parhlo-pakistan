@@ -120,9 +120,15 @@ export default function ParhloPakistan() {
         
         {/* Transparent Header Menu */}
         <nav className="relative flex justify-between items-center z-50 p-4">
-          <div className="pl-8">
-            <Link href="/">
-              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
+          <div className="flex items-center gap-2">
+            <button 
+              className="md:hidden text-gray-200 p-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+            <Link href="/" className="pl-2 md:pl-8">
+              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer" />
             </Link>
           </div>
           <div className="hidden md:flex gap-10 text-sm font-bold text-gray-200">
@@ -152,12 +158,6 @@ export default function ParhloPakistan() {
               </button>
             )}
           </div>
-          <button 
-            className="md:hidden text-gray-200 p-2"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
         </nav>
 
         {isMobileMenuOpen && (

@@ -244,7 +244,7 @@ export default function StudentDashboard() {
         <div className="md:hidden flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-900"><Menu size={24}/></button>
-            <img src="/logo.png" alt="Logo" className="h-8" />
+            <img src="/logo.png" alt="Logo" className="h-10 md:h-10" />
           </div>
           <button onClick={handleLogout} className="text-gray-500 hover:text-red-600"><LogOut size={20}/></button>
         </div>

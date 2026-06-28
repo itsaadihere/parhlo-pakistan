@@ -106,9 +106,15 @@ export default function AllCourses() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-green-100">
       <nav className="border-b border-gray-100 flex justify-between items-center bg-white/90 backdrop-blur-md sticky top-0 z-50 p-4">
-        <div className="pl-8">
-          <Link href="/">
-            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-20 w-auto object-contain cursor-pointer" />
+        <div className="flex items-center gap-2">
+          <button 
+            className="md:hidden text-gray-900 p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+          <Link href="/" className="pl-2 md:pl-8">
+            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer" />
           </Link>
         </div>
         <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
@@ -138,12 +144,6 @@ export default function AllCourses() {
             </button>
           )}
         </div>
-        <button 
-          className="md:hidden text-gray-900 p-2"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
       </nav>
 
       {isMobileMenuOpen && (

@@ -251,7 +251,7 @@ export default function AdminDashboard() {
       <aside className="w-64 bg-white border-r border-gray-100 flex-col hidden md:flex">
         <div className="p-6 flex items-center gap-3">
           <Link href="/">
-            <img src="/logo.png" alt="Logo" className="h-8" />
+            <img src="/logo.png" alt="Logo" className="h-10" />
           </Link>
           <span className="font-bold text-green-800">Admin</span>
         </div>
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
         <div className="md:hidden flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-500 hover:text-gray-900"><Menu size={24}/></button>
-            <img src="/logo.png" alt="Logo" className="h-8" />
+            <img src="/logo.png" alt="Logo" className="h-10 md:h-10" />
           </div>
           <button onClick={handleLogout} className="text-gray-500 hover:text-red-600"><LogOut size={20}/></button>
         </div>
@@ -294,7 +294,7 @@ export default function AdminDashboard() {
               </button>
               <div className="p-6 flex items-center gap-3">
                 <Link href="/">
-                  <img src="/logo.png" alt="Logo" className="h-8" />
+                  <img src="/logo.png" alt="Logo" className="h-10" />
                 </Link>
                 <span className="font-bold text-green-800">Admin</span>
               </div>
