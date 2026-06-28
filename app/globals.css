@@ -24,3 +24,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@utility logo-outline {
+  filter: drop-shadow(1px 0px 0px white) 
+          drop-shadow(-1px 0px 0px white) 
+          drop-shadow(0px 1px 0px white) 
+          drop-shadow(0px -1px 0px white);
+}

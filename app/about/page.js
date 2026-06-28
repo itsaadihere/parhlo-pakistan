@@ -58,7 +58,7 @@ export default function AboutPage() {
           <img 
             src="/logo.png" 
             alt="Parhlo Pakistan Logo" 
-            className="h-10 md:h-20 w-auto object-contain cursor-pointer drop-shadow-[0_0_1px_#ffffff]" 
+            className="h-10 md:h-20 w-auto object-contain cursor-pointer logo-outline" 
           />
         </Link>
       </div>
@@ -129,7 +129,7 @@ export default function AboutPage() {
       <div className="max-w-6xl mx-auto px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
-            <img src="/logo.png" alt="Logo" className="h-16 mb-6 drop-shadow-[0_0_1px_#ffffff]" />
+            <img src="/logo.png" alt="Logo" className="h-16 mb-6 logo-outline" />
             <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
               Helping Class 9 Sindh Board students achieve top results through concept-based digital learning. Join Parhlo Pakistan and study smarter from home.
             </p>
