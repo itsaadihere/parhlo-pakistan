@@ -128,7 +128,7 @@ export default function ParhloPakistan() {
               {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
             <Link href="/" className="pl-2 md:pl-8">
-              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer" />
+              <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer drop-shadow-[0_0_1px_#ffffff]" />
             </Link>
           </div>
           <div className="hidden md:flex gap-10 text-sm font-bold text-gray-200">
@@ -273,7 +273,7 @@ export default function ParhloPakistan() {
         <div className="max-w-6xl mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-2">
-              <img src="/logo.png" alt="Logo" className="h-16 mb-6" loading="lazy" decoding="async" />
+              <img src="/logo.png" alt="Logo" className="h-16 mb-6 drop-shadow-[0_0_1px_#ffffff]" loading="lazy" decoding="async" />
               <p className="text-gray-500 max-w-sm leading-relaxed font-medium">
                 Helping Class 9 Sindh Board students achieve top results through concept-based digital learning. Join Parhlo Pakistan and study smarter from home.
               </p>

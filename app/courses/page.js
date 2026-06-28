@@ -114,7 +114,7 @@ export default function AllCourses() {
             {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
           <Link href="/" className="pl-2 md:pl-8">
-            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer" />
+            <img src="/logo.png" alt="Parhlo Pakistan Logo" className="h-10 md:h-20 w-auto object-contain cursor-pointer drop-shadow-[0_0_1px_#ffffff]" />
           </Link>
         </div>
         <div className="hidden md:flex gap-10 text-sm font-bold text-gray-600">
@@ -261,7 +261,7 @@ export default function AllCourses() {
 
       <footer className="bg-white border-t border-gray-200 pt-16 pb-10 mt-20">
         <div className="max-w-6xl mx-auto px-8 text-center">
-           <img src="/logo.png" alt="Logo" className="h-16 mb-6 mx-auto" loading="lazy" decoding="async" />
+           <img src="/logo.png" alt="Logo" className="h-16 mb-6 mx-auto drop-shadow-[0_0_1px_#ffffff]" loading="lazy" decoding="async" />
            <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] font-black mb-2">Designed & Developed by</p>
             <a href="https://mockup.media" target="_blank" rel="noopener noreferrer" className="inline-block text-gray-400 hover:text-green-600 transition-all font-light text-base mb-6">
               Mockup Media (SMC-Private) Limited
