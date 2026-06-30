@@ -397,23 +397,23 @@ export default function AdminDashboard() {
 
             <div className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
               <div className="grid grid-cols-12 gap-4 bg-gray-50 px-6 py-4 text-xs uppercase tracking-[0.2em] text-gray-500">
-                <div className="col-span-4">Course</div>
+                <div className="col-span-3">Course</div>
                 <div className="col-span-2">Category</div>
-                <div className="col-span-1">Price</div>
+                <div className="col-span-2">Price</div>
                 <div className="col-span-2">Instructor</div>
-                <div className="col-span-2">Level</div>
-                <div className="col-span-1 text-right">Action</div>
+                <div className="col-span-1">Level</div>
+                <div className="col-span-2 text-right">Action</div>
               </div>
               {adminCourses.map((course) => (
                 <div key={course.slug} className="grid grid-cols-12 gap-4 px-6 py-5 border-t border-gray-100 items-center hover:bg-gray-50 transition-colors">
-                  <div className="col-span-4 font-bold text-slate-900">{course.name}</div>
+                  <div className="col-span-3 font-bold text-slate-900">{course.name}</div>
                   <div className="col-span-2 text-gray-500">{course.category}</div>
-                  <div className="col-span-1 text-gray-500">Rs. {course.price}</div>
+                  <div className="col-span-2 text-gray-500">Rs. {course.price}</div>
                   <div className="col-span-2 text-gray-500">{course.instructor}</div>
-                  <div className="col-span-2 text-gray-500">
+                  <div className="col-span-1 text-gray-500">
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">{course.level}</span>
                   </div>
-                  <div className="col-span-1 text-right flex gap-3 justify-end">
+                  <div className="col-span-2 text-right flex gap-3 justify-end items-center">
                     <Link
                       href={`/admin/edit-course/${course.slug}`}
                       className="text-blue-600 font-bold hover:text-blue-800 text-sm"
