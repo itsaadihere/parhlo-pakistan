@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, ChevronDown, PlayCircle, Plus, X, Upload, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
-import { fetchYoutubeVideoDuration } from './actions';
+import { fetchYoutubeVideoDuration } from '../add-course/actions';
 
 const extractYouTubeId = (value) => {
   try {
@@ -25,12 +25,17 @@ const extractYouTubeId = (value) => {
   return '';
 };
 
-export default function AdminAddCoursePage() {
+export default function AdminEditCoursePage() {
   const router = useRouter();
+  const params = useParams();
+  const editSlug = params?.slug;
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+
   const [levelDropdownOpen, setLevelDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
@@ -54,32 +59,8 @@ export default function AdminAddCoursePage() {
     thumbnail: '',
     price: '',
     discount: '',
-    lectures: [
-      { title: 'Demo Lecture', url: '', videoId: '', type: 'demo' },
-      { title: 'Lecture 1', url: '', videoId: '', type: 'lecture' }
-    ]
+    lectures: []
   });
-
-  useEffect(() => {
-    const savedDraft = window.localStorage.getItem('parhlo_course_draft');
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && parsed.name !== undefined) {
-          if (window.confirm("You have an unsaved course draft. Do you want to restore it?")) {
-            setForm(parsed);
-          } else {
-            window.localStorage.removeItem('parhlo_course_draft');
-          }
-        }
-      } catch (e) {}
-    }
-  }, []);
-
-  const handleSaveProgress = () => {
-    window.localStorage.setItem('parhlo_course_draft', JSON.stringify(form));
-    alert("Course progress saved locally. You can safely leave and restore it later.");
-  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -90,6 +71,58 @@ export default function AdminAddCoursePage() {
     }
     setIsAdmin(true);
   }, []);
+
+  useEffect(() => {
+    if (!editSlug) return;
+    const fetchCourse = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.from('courses').select('*').eq('slug', editSlug).single();
+      if (data) {
+        setForm({
+          name: data.name || '',
+          slug: data.slug || '',
+          description: data.description || '',
+          level: data.level || 'Basic',
+          category: data.category || '',
+          instructor: data.instructor || '',
+          instructorIntro: data.instructorIntro || '',
+          instructorImage: data.instructorImage || '',
+          thumbnail: data.thumbnail || '',
+          price: data.price || '',
+          discount: data.discount || '',
+          lectures: data.lectures || []
+        });
+      } else if (error) {
+        setError(`Failed to fetch course: ${error.message}`);
+      }
+      setLoading(false);
+      setInitialFetchDone(true);
+    };
+    fetchCourse();
+  }, [editSlug]);
+
+  useEffect(() => {
+    if (!initialFetchDone || !editSlug) return;
+    const savedDraft = window.localStorage.getItem(`parhlo_course_draft_${editSlug}`);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && parsed.name !== undefined) {
+          if (window.confirm("You have an unsaved course draft for this subject. Do you want to restore it?")) {
+            setForm(parsed);
+          } else {
+            window.localStorage.removeItem(`parhlo_course_draft_${editSlug}`);
+          }
+        }
+      } catch (e) {}
+    }
+  }, [initialFetchDone, editSlug]);
+
+  const handleSaveProgress = () => {
+    if (!editSlug) return;
+    window.localStorage.setItem(`parhlo_course_draft_${editSlug}`, JSON.stringify(form));
+    alert("Course progress saved locally. You can safely leave and restore it later.");
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -110,14 +143,8 @@ export default function AdminAddCoursePage() {
 
   useEffect(() => {
     const fetchMetadata = async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*');
-      
-      if (error) {
-        console.error('Error fetching metadata:', error);
-        return;
-      }
+      const { data, error } = await supabase.from('courses').select('*');
+      if (error) return;
 
       const categorySet = new Set();
       const instructorSet = new Set();
@@ -151,26 +178,19 @@ export default function AdminAddCoursePage() {
   useEffect(() => {
     const key = String(form.instructor || '').trim().toLowerCase();
     if (key) {
-      if (instructorIntroMap[key]) {
+      if (instructorIntroMap[key] && !form.instructorIntro) {
         setForm((prev) => ({ ...prev, instructorIntro: instructorIntroMap[key] }));
       }
-      if (instructorImageMap[key]) {
+      if (instructorImageMap[key] && !form.instructorImage) {
         setForm((prev) => ({ ...prev, instructorImage: instructorImageMap[key] }));
       }
     }
   }, [form.instructor, instructorIntroMap, instructorImageMap]);
 
-  const slugFromName = useMemo(() => {
-    return form.name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }, [form.name]);
-
-  useEffect(() => {
-    setForm((prev) => ({ ...prev, slug: slugFromName }));
-  }, [slugFromName]);
+  // Optionally generate slug from name if the admin wants to rename it. 
+  // However, since it's edit mode, changing the slug might break existing links/payments.
+  // We'll keep the slug fixed to editSlug or update it but let's be careful.
+  // Let's make slug read-only and NOT auto-update it on Edit to prevent breaking data.
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -206,7 +226,6 @@ export default function AdminAddCoursePage() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Export as highly compressed WebP format (0.7 quality)
         const compressedBase64 = canvas.toDataURL('image/webp', 0.7);
         callback(compressedBase64);
       };
@@ -309,12 +328,12 @@ export default function AdminAddCoursePage() {
   };
 
   const validateForm = () => {
-    if (!form.name || !form.slug || !form.description || !form.level || !form.category || !form.instructor || !form.instructorIntro || !form.price) {
+    if (!form.name || !form.description || !form.level || !form.category || !form.instructor || !form.instructorIntro || !form.price) {
       setError('Please fill all required course fields.');
       return false;
     }
-    if (form.lectures.length < 2) {
-      setError('Please add at least one demo and one lecture.');
+    if (form.lectures.length < 1) {
+      setError('Please add at least one lecture.');
       return false;
     }
     const brokenLecture = form.lectures.find((lecture) => !lecture.title || !lecture.url || (lecture.type !== 'quiz' && !lecture.videoId));
@@ -335,72 +354,60 @@ export default function AdminAddCoursePage() {
     setSuccess('');
 
     try {
-      // Check if slug exists in Supabase
-      const { data: existing, error: fetchError } = await supabase
+      const { error: updateError } = await supabase
         .from('courses')
-        .select('slug')
-        .eq('slug', form.slug)
-        .single();
+        .update({
+          name: form.name,
+          description: form.description,
+          level: form.level,
+          category: form.category,
+          instructor: form.instructor,
+          instructorIntro: form.instructorIntro,
+          instructorImage: form.instructorImage,
+          thumbnail: form.thumbnail,
+          price: form.price,
+          discount: form.discount,
+          lectures: form.lectures
+        })
+        .eq('slug', editSlug);
 
-      if (existing) {
-        setError('This course already exists. Change the course name so the slug is unique.');
+      if (updateError) {
+        const errStr = typeof updateError === 'object' ? JSON.stringify(updateError) : String(updateError);
+        setError(`Failed to update course. Database Error: ${updateError.message || updateError.details || errStr}`);
         setLoading(false);
         return;
       }
 
-      // Insert into Supabase
-      const { error: insertError } = await supabase
-        .from('courses')
-        .insert([
-          {
-            name: form.name,
-            slug: form.slug,
-            description: form.description,
-            level: form.level,
-            category: form.category,
-            instructor: form.instructor,
-            instructorIntro: form.instructorIntro,
-            instructorImage: form.instructorImage,
-            thumbnail: form.thumbnail,
-            price: form.price,
-            discount: form.discount,
-            lectures: form.lectures
-          }
-        ]);
-
-      if (insertError) {
-        const errStr = typeof insertError === 'object' ? JSON.stringify(insertError) : String(insertError);
-        setError(`Failed to save course. Database Error: ${insertError.message || insertError.details || errStr}`);
-        setLoading(false);
-        return;
-      }
-
-      window.localStorage.removeItem('parhlo_course_draft');
-      setSuccess('Course saved successfully!');
+      window.localStorage.removeItem(`parhlo_course_draft_${editSlug}`);
+      setSuccess('Course updated successfully!');
       router.push('/admin');
     } catch (err) {
       const errString = typeof err === 'object' ? (err.message ? err.message : JSON.stringify(err)) : String(err);
-      setError(`Failed to save course. Unexpected error: ${errString}`);
+      setError(`Failed to update course. Unexpected error: ${errString}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isAdmin) {
-    return null;
+  if (!isAdmin || !initialFetchDone) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 border-t-transparent"></div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 text-slate-900 font-sans selection:bg-green-100">
       <div className="max-w-7xl mx-auto px-8 py-10">
-        <Link href="/" className="inline-flex items-center gap-2 mb-8 text-sm font-bold text-gray-600 hover:text-green-600">
+        <Link href="/admin" className="inline-flex items-center gap-2 mb-8 text-sm font-bold text-gray-600 hover:text-green-600">
           <ChevronLeft size={18} /> Back to Admin
         </Link>
 
         <div className="bg-white rounded-[2rem] border border-gray-200 p-10 shadow-sm">
           <div className="mb-10">
-            <h1 className="text-4xl font-black text-slate-900 mb-3">Add New Course</h1>
-            <p className="text-gray-500 max-w-2xl">Enter course details and private YouTube lecture links. Demo content is available before payment, and paid lectures will unlock after admin approval.</p>
+            <h1 className="text-4xl font-black text-slate-900 mb-3">Edit Subject / Course</h1>
+            <p className="text-gray-500 max-w-2xl">Update course details and private YouTube lecture links. Demo content is available before payment, and paid lectures will unlock after admin approval.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10">
@@ -618,7 +625,7 @@ export default function AdminAddCoursePage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900">Content</h2>
-                  <p className="text-gray-500 text-sm">Add one demo lecture plus at least one paid lecture. You can also add quizzes (Google Form links).</p>
+                  <p className="text-gray-500 text-sm">Add or edit lectures. You can also add quizzes (Google Form links).</p>
                 </div>
                 <div className="flex gap-4">
                   <button
@@ -640,7 +647,7 @@ export default function AdminAddCoursePage() {
 
               <div className="space-y-6">
                 {form.lectures.map((lecture, index) => (
-                  <div key={index} className="grid gap-4 md:grid-cols-12 items-end rounded-3xl border border-gray-200 bg-white p-6">
+                  <div key={index} className="grid gap-4 md:grid-cols-12 items-end rounded-3xl border border-gray-200 bg-white p-6 relative">
                     <div className="md:col-span-4">
                       <label className="block text-sm font-bold text-gray-700">Lecture Name</label>
                       <input
@@ -674,6 +681,17 @@ export default function AdminAddCoursePage() {
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newLectures = form.lectures.filter((_, i) => i !== index);
+                        setForm((prev) => ({ ...prev, lectures: newLectures }));
+                      }}
+                      className="absolute -top-3 -right-3 bg-red-100 text-red-600 rounded-full p-2 hover:bg-red-200 transition-colors shadow-sm"
+                      title="Remove Lecture"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -683,14 +701,14 @@ export default function AdminAddCoursePage() {
             {success && <div className="rounded-3xl border border-green-200 bg-green-50 px-6 py-4 text-green-700">{success}</div>}
 
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
-              <Link href="/" className="inline-flex justify-center rounded-full border border-gray-200 px-8 py-4 font-bold text-gray-700 hover:bg-gray-100 transition-all">
+              <Link href="/admin" className="inline-flex justify-center rounded-full border border-gray-200 px-8 py-4 font-bold text-gray-700 hover:bg-gray-100 transition-all">
                 Cancel
               </Link>
               <button type="button" onClick={handleSaveProgress} className="inline-flex justify-center rounded-full border border-green-600 px-8 py-4 font-bold text-green-700 hover:bg-green-50 transition-all">
                 Save Progress
               </button>
               <button type="submit" className="inline-flex justify-center rounded-full bg-[#064e3b] px-8 py-4 font-black text-white hover:bg-green-600 transition-all">
-                Save course
+                Update course
               </button>
             </div>
           </form>

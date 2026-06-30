@@ -569,13 +569,17 @@ export default function DynamicCourseDetail() {
                     type="button"
                     onClick={() => {
                       if (item.type === 'quiz' && item.url) {
+                        if (!hasAccess) {
+                          alert("You need to purchase this course to take this quiz.");
+                          return;
+                        }
                         window.open(item.url, '_blank');
                       } else if (item.videoId) {
                         openPreview(idx);
                       }
                     }}
-                    disabled={(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url)}
-                    className={`bg-white border px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm transition-colors ${hasAccess ? 'border-green-200 hover:border-green-600' : 'border-gray-200'} ${(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url) || !hasAccess}
+                    className={`bg-white border px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-900 shadow-sm transition-colors ${hasAccess ? 'border-green-200 hover:border-green-600' : 'border-gray-200'} ${(!item.videoId && item.type !== 'quiz') || (item.type === 'quiz' && !item.url) || !hasAccess ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {item.type === 'quiz' 
                       ? (!item.url ? 'Unavailable' : hasAccess ? 'Take Quiz' : 'Enroll to Unlock')

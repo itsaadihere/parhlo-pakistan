@@ -413,7 +413,13 @@ export default function AdminDashboard() {
                   <div className="col-span-2 text-gray-500">
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">{course.level}</span>
                   </div>
-                  <div className="col-span-1 text-right">
+                  <div className="col-span-1 text-right flex gap-3 justify-end">
+                    <Link
+                      href={`/admin/edit-course/${course.slug}`}
+                      className="text-blue-600 font-bold hover:text-blue-800 text-sm"
+                    >
+                      Edit
+                    </Link>
                     <button
                       onClick={() => handleDeleteCourse(course)}
                       className="text-red-600 font-bold hover:text-red-800 text-sm"
