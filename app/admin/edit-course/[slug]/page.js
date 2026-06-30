@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, ChevronDown, PlayCircle, Plus, X, Upload, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
-import { fetchYoutubeVideoDuration } from '../add-course/actions';
+import { fetchYoutubeVideoDuration } from '../../add-course/actions';
 
 const extractYouTubeId = (value) => {
   try {
