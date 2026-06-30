@@ -74,7 +74,7 @@ export default function AllCourses() {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('name, price, students, rating, tag, slug, category, thumbnail, instructorImage')
+      .select('name, price, discount, students, rating, tag, slug, category, thumbnail, instructorImage')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -85,9 +85,16 @@ export default function AllCourses() {
       setCoursesError(null);
       const persistedCourses = data.map((course) => {
         const studentsCount = parseInt(course.students) || 0;
+        const originalPriceStr = course.price ? String(course.price).replace(/[^0-9.]/g, '') : '0';
+        const originalPrice = parseFloat(originalPriceStr) || 0;
+        const discountPercent = parseFloat(String(course.discount || '').replace(/[^0-9.]/g, '')) || 0;
+        const salePrice = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
+        
         return {
           title: course.name,
-          price: course.price || '0',
+          price: originalPrice,
+          salePrice: salePrice,
+          discount: discountPercent > 0 ? discountPercent : 0,
           students: studentsCount >= 5 ? String(studentsCount) : null,
           rating: getDeterministicRating(course.slug),
           tag: course.tag || 'New',
@@ -232,7 +239,19 @@ export default function AllCourses() {
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-6 border-t border-gray-50">
-                    <span className="text-2xl font-black text-gray-900">Rs. {course.price}</span>
+                    <div className="flex flex-col">
+                      {course.discount > 0 ? (
+                        <>
+                          <span className="text-sm font-bold text-gray-400 line-through">Rs. {course.price.toLocaleString()}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-black text-gray-900">Rs. {course.salePrice.toLocaleString()}</span>
+                            <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-md">-{course.discount}%</span>
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-2xl font-black text-gray-900">Rs. {course.price.toLocaleString()}</span>
+                      )}
+                    </div>
                     <Link href={`/courses/${course.slug}`}>
                       <button className="bg-gray-100 hover:bg-[#064e3b] hover:text-white px-8 py-3 rounded-2xl font-black transition-all text-gray-900 uppercase text-[10px] tracking-widest">
                         View Subject

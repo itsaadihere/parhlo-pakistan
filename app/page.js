@@ -54,7 +54,7 @@ export default function ParhloPakistan() {
     setLoading(true);
     const { data, error } = await supabase
       .from('courses')
-      .select('name, slug, thumbnail, price, students, rating, tag')
+      .select('name, slug, thumbnail, price, discount, students, rating, tag')
       .limit(3)
       .order('created_at', { ascending: false });
 
@@ -65,11 +65,18 @@ export default function ParhloPakistan() {
     } else if (data && data.length > 0) {
       const mappedCourses = data.map(course => {
         const studentsCount = parseInt(course.students) || 0;
+        const originalPriceStr = course.price ? String(course.price).replace(/[^0-9.]/g, '') : '0';
+        const originalPrice = parseFloat(originalPriceStr) || 0;
+        const discountPercent = parseFloat(String(course.discount || '').replace(/[^0-9.]/g, '')) || 0;
+        const salePrice = discountPercent > 0 ? Math.round(originalPrice * (1 - discountPercent / 100)) : originalPrice;
+
         return {
           title: course.name,
           slug: course.slug,
           thumbnail: course.thumbnail,
-          price: course.price || '0',
+          price: originalPrice,
+          salePrice: salePrice,
+          discount: discountPercent > 0 ? discountPercent : 0,
           students: studentsCount >= 5 ? String(studentsCount) : null,
           rating: getDeterministicRating(course.slug),
           tag: course.tag || 'New'
@@ -256,7 +263,19 @@ export default function ParhloPakistan() {
                 </div>
                 <h3 className="text-2xl font-black mb-10 leading-tight group-hover:text-green-600 transition-colors">{course.title}</h3>
                 <div className="flex justify-between items-center pt-6 border-t border-gray-50">
-                  <span className="text-2xl font-black text-gray-900">Rs. {course.price}</span>
+                  <div className="flex flex-col">
+                    {course.discount > 0 ? (
+                      <>
+                        <span className="text-sm font-bold text-gray-400 line-through">Rs. {course.price.toLocaleString()}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-black text-gray-900">Rs. {course.salePrice.toLocaleString()}</span>
+                          <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-md">-{course.discount}%</span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-black text-gray-900">Rs. {course.price.toLocaleString()}</span>
+                    )}
+                  </div>
                   <Link href={`/courses/${course.slug}`}>
                     <button className="bg-gray-100 hover:bg-[#064e3b] hover:text-white px-8 py-3 rounded-2xl font-black transition-all text-gray-900 uppercase text-[10px] tracking-widest">
                       Detail
