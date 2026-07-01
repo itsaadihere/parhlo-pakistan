@@ -12,6 +12,7 @@ import {
   Globe,
   ShieldCheck,
   Users,
+  User,
   Plus,
   BookOpen,
   CheckCircle2,
@@ -34,6 +35,9 @@ export default function AdminDashboard() {
   const [viewingReceipt, setViewingReceipt] = useState(null);
   const [viewingStudent, setViewingStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState([]);
+  const [newTeacher, setNewTeacher] = useState({ name: '', email: '', password: '' });
+  const [teacherMessage, setTeacherMessage] = useState('');
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -107,6 +111,19 @@ export default function AdminDashboard() {
         };
       });
       setPayments(mappedPayments);
+    }
+
+    // Fetch teachers
+    const { data: teachersData, error: teachersError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'teacher')
+      .order('created_at', { ascending: false });
+    
+    if (teachersError) {
+      console.error('Error fetching teachers:', teachersError);
+    } else {
+      setTeachers(teachersData || []);
     }
 
     setLoading(false);
@@ -237,6 +254,7 @@ export default function AdminDashboard() {
 
   const menuItems = [
     { name: 'Dashboard', icon: <Globe size={20} />, id: 'dashboard' },
+    { name: 'Teachers', icon: <User size={20} />, id: 'teachers' },
     { name: 'Subjects', icon: <PlayCircle size={20} />, id: 'courses' },
     { name: 'Enrollments', icon: <Users size={20} />, id: 'enrollments' },
     { name: 'Payments', icon: <CreditCard size={20} />, id: 'payments' },
@@ -542,6 +560,109 @@ export default function AdminDashboard() {
                         <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full">{student.activeCourses.length} Active</span>
                         {student.pendingCourses.length > 0 && <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">{student.pendingCourses.length} Pending</span>}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'teachers' && (
+          <div>
+            <h1 className="text-3xl font-black mb-6">Manage Teachers</h1>
+            <p className="text-gray-500 mb-10">Add new teacher accounts and view registered instructors.</p>
+
+            <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm mb-10">
+              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <User size={24} className="text-green-600" /> Create Teacher Account
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={newTeacher.name}
+                    onChange={(e) => setNewTeacher({...newTeacher, name: e.target.value})}
+                    className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium"
+                    placeholder="E.g. Sir Ali"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                  <input 
+                    type="email" 
+                    value={newTeacher.email}
+                    onChange={(e) => setNewTeacher({...newTeacher, email: e.target.value})}
+                    className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium"
+                    placeholder="teacher@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    value={newTeacher.password}
+                    onChange={(e) => setNewTeacher({...newTeacher, password: e.target.value})}
+                    className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium"
+                    placeholder="Set a password"
+                  />
+                </div>
+              </div>
+              {teacherMessage && (
+                <div className={`p-4 mb-4 rounded-xl text-sm font-medium ${teacherMessage.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {teacherMessage}
+                </div>
+              )}
+              <button 
+                onClick={async () => {
+                  if (!newTeacher.name || !newTeacher.email || !newTeacher.password) {
+                    setTeacherMessage('Please fill all fields');
+                    return;
+                  }
+                  
+                  // Check if user exists
+                  const { data: existing } = await supabase.from('users').select('id').eq('email', newTeacher.email).single();
+                  if (existing) {
+                    setTeacherMessage('User with this email already exists.');
+                    return;
+                  }
+                  
+                  const { error } = await supabase.from('users').insert([{
+                    email: newTeacher.email,
+                    password: newTeacher.password,
+                    full_name: newTeacher.name,
+                    role: 'teacher'
+                  }]);
+                  
+                  if (error) {
+                    setTeacherMessage('Error creating teacher: ' + error.message);
+                  } else {
+                    setTeacherMessage('Teacher created successfully!');
+                    fetchData(); // refresh list
+                    setNewTeacher({ name: '', email: '', password: '' });
+                    setTimeout(() => setTeacherMessage(''), 3000);
+                  }
+                }}
+                className="bg-gray-900 text-white px-8 py-4 rounded-xl font-black hover:bg-green-600 transition-all shadow-lg w-full md:w-auto"
+              >
+                Add Teacher
+              </button>
+            </div>
+
+            <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Registered Teachers</h2>
+              {teachers.length === 0 ? (
+                <p className="text-gray-500 italic">No teachers found. Add one above.</p>
+              ) : (
+                <div className="space-y-4">
+                  {teachers.map(teacher => (
+                    <div key={teacher.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <div>
+                        <p className="font-bold text-gray-900">{teacher.full_name}</p>
+                        <p className="text-xs text-gray-500">{teacher.email}</p>
+                      </div>
+                      <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">Teacher</span>
                     </div>
                   ))}
                 </div>

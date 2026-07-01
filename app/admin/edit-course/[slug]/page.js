@@ -157,7 +157,7 @@ export default function AdminEditCoursePage() {
         const intro = String(course.instructorIntro || '').trim();
         const image = String(course.instructorImage || '').trim();
         if (category) categorySet.add(category);
-        if (instructor) instructorSet.add(instructor);
+        
         if (instructor && intro && !introMap[instructor.toLowerCase()]) {
           introMap[instructor.toLowerCase()] = intro;
         }
@@ -165,6 +165,18 @@ export default function AdminEditCoursePage() {
           imageMap[instructor.toLowerCase()] = image;
         }
       });
+
+      // Fetch official teachers from users table
+      const { data: teachersData } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('role', 'teacher');
+      
+      if (teachersData) {
+        teachersData.forEach(t => {
+          if (t.full_name) instructorSet.add(t.full_name);
+        });
+      }
 
       setCategories(Array.from(categorySet));
       setInstructors(Array.from(instructorSet));
@@ -328,8 +340,12 @@ export default function AdminEditCoursePage() {
   };
 
   const validateForm = () => {
-    if (!form.name || !form.description || !form.level || !form.category || !form.instructor || !form.instructorIntro || !form.price) {
+    if (!form.name || !form.slug || !form.description || !form.level || !form.category || !form.instructor || !form.instructorIntro || !form.price) {
       setError('Please fill all required course fields.');
+      return false;
+    }
+    if (!isKnownInstructor) {
+      setError('Please select a registered teacher from the dropdown.');
       return false;
     }
     if (form.lectures.length < 1) {
@@ -539,7 +555,7 @@ export default function AdminEditCoursePage() {
                     value={form.instructor}
                     onChange={(e) => handleInstructorInput(e.target.value)}
                     onFocus={() => setInstructorDropdownOpen(true)}
-                    placeholder="Enter instructor name"
+                    placeholder="Search for an official teacher..."
                     className="w-full rounded-[2rem] border border-green-200 bg-white px-5 py-4 outline-none text-gray-900 shadow-sm transition focus:border-green-500 focus:ring-2 focus:ring-green-100"
                   />
                   {instructorDropdownOpen && filteredInstructors.length > 0 && (
@@ -564,7 +580,7 @@ export default function AdminEditCoursePage() {
                   )}
                 </div>
                 {!isKnownInstructor && form.instructor.trim() !== '' && (
-                  <p className="mt-2 text-sm text-green-700">Adding new instructor</p>
+                  <p className="mt-2 text-sm text-red-600 font-bold">Must select a registered teacher from the dropdown.</p>
                 )}
               </label>
               <label className="block">

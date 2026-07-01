@@ -64,13 +64,18 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
       }
     }
 
-    const isAdmin = email === "parhlo.pakistan.edu@gmail.com";
+    let finalRole = 'student';
+    if (email === "parhlo.pakistan.edu@gmail.com") finalRole = 'admin';
+    else if (authMode !== 'signup' && user?.role) finalRole = user.role;
+
+    const isAdmin = finalRole === 'admin';
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('parhloAdmin', isAdmin ? 'true' : 'false');
       window.localStorage.setItem('currentUserEmail', email);
+      window.localStorage.setItem('parhloRole', finalRole);
     }
     
-    onLoginSuccess && onLoginSuccess(isAdmin);
+    onLoginSuccess && onLoginSuccess(finalRole);
     onClose();
   };
 
