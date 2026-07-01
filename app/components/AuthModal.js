@@ -22,6 +22,8 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
       console.error(err);
     }
 
+    let fetchedUser = null;
+
     if (authMode === 'signup') {
       const { data: existing } = await supabase.from('users').select('*').eq('email', email).single();
       if (existing) {
@@ -44,6 +46,7 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
       }
     } else {
       const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+      fetchedUser = user;
       
       if (email === "parhlo.pakistan.edu@gmail.com" && (!user || error)) {
         // Fallback for admin if table is missing or empty
@@ -66,7 +69,7 @@ export default function AuthModal({ onClose, isOpen, initialMode = 'login', onLo
 
     let finalRole = 'student';
     if (email === "parhlo.pakistan.edu@gmail.com") finalRole = 'admin';
-    else if (authMode !== 'signup' && user?.role) finalRole = user.role;
+    else if (authMode !== 'signup' && fetchedUser?.role) finalRole = fetchedUser.role;
 
     const isAdmin = finalRole === 'admin';
     if (typeof window !== 'undefined') {
